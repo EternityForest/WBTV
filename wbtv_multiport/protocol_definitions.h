@@ -13,6 +13,7 @@
 #define STX '~'
 #define EOT '\n'
 #define ESC '\\'
-//Define if potocol is running over wired or bus and not direct full duplex point to point
-//#define WIREDOR
+
+#define MAX_BACKOFF 300
+#define MIN_BACKOFF 130
 

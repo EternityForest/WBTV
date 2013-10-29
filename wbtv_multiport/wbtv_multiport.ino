@@ -1,9 +1,6 @@
 
 #include "wbtv.h"
-WBTVNode node(&Serial,0);
-//The pin used to sense bus activity
-//(in case some platform doesn't let you digitalread from an RX pin )
-#define BUS_SENSE_PIN 0
+WBTVNode node(&Serial);
   unsigned char a5val;
     //Last time the periodic message was sent
   unsigned long timeLastSent;

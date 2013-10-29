@@ -24,7 +24,8 @@ public:
   void decodeChar(unsigned char chr);
 
   WBTVNode( Stream *, int bus_sense_pin);
-
+  WBTVNode( Stream *);
+  
   void setBinaryCallback(
   void (*thecallback)(
   unsigned char *, 
@@ -41,7 +42,7 @@ private:
   //Pointer to the place to put the new char
   unsigned char recievePointer = 0;
   //Place to keep track of where the header stops and data begins
-  unsigned char lastByteOfHeader;
+  unsigned char headerTerminatorPosition;
   //Used for the fletcher checksum
   unsigned char sumSlow,sumFast =0;
   //If the last char recieved was an unesaped escape, this is true
@@ -54,6 +55,7 @@ private:
   unsigned char message[MAX_MESSAGE];
 
   unsigned char sensepin;
+  unsigned char wiredor;
   
   void (*callback)(
   unsigned char *, 
