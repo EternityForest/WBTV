@@ -70,12 +70,25 @@ void WBTVNode::sendMessage(const unsigned char * channel, const unsigned char ch
   //If at any time an error is found, go back here to retry
 waiting:
   //Wait till the bus is free
-  waitTillICanSend();
-
+  if(wiredor)
+  {
+    waitTillICanSend();
+  }
   //Reset the checksum engine
   sumSlow = sumFast =0;
-  
+
   //Basically, send bytes, if we get interfered with, go back to waiting
+
+
+#ifdef DUMMY_STH
+  //Sent dummy start code for reliabilty in case there was noise that looked like an ESC.
+  //This is really just there for paranoia reasons but it's a nice addition and it's only one more byte.
+  if (!writeWrapper(STH))
+  {
+    goto waiting;
+  }
+#endif
+
   if (!writeWrapper(STH))//Sent start code
   {
     goto waiting;
@@ -95,6 +108,9 @@ waiting:
   {
     goto waiting;
   }
+#ifdef HASH_STX
+  updateHash(STX);
+#endif
   //Send the message(escaped)
   for (i = 0; i<datalen;i++)
   {
@@ -105,7 +121,7 @@ waiting:
 
     }
   }
-  
+
   //Send the two bytes of the checksum
   if (!escapedWrite(sumSlow))
   {
@@ -125,7 +141,8 @@ waiting:
 
 }
 
-//Note that one hash engine gets used for sending and recieving. This works for now because we calc the hash all at once after we are done recieving
+//Note that one hash engine gets used for sending and recieving. This works for now because we calc the hash all at once after we are
+//done recieving
 //i.e. hashing a recieved packet is atomic
 void WBTVNode::updateHash(unsigned char chr)
 {
@@ -168,7 +185,7 @@ void WBTVNode::decodeChar(unsigned char chr)
       {
         garbage =  1;
       }
-      
+
       headerTerminatorPosition = recievePointer;
       message[recievePointer] = 0; //Null terminator between header and data makes string callbacks work
       recievePointer ++;
@@ -179,19 +196,18 @@ void WBTVNode::decodeChar(unsigned char chr)
     if (chr == EOT)
     {
       unsigned char i;
-      
       if (garbage)//If this packet was garbage, throw it away
       {
         return;
       }
-      
+
       if (!headerTerminatorPosition)
-      //If the headerTerminatorPosition is 0, then we either have a zero length header, or we never recieved a end-of header char.
-      //I never specifically wrote that 0-len headers are illegal in the spec. but maybe I should. Otherwise this is a bug [ ]
+        //If the headerTerminatorPosition is 0, then we either have a zero length header, or we never recieved a end-of header char.
+        //I never specifically wrote that 0-len headers are illegal in the spec. but maybe I should. Otherwise this is a bug [ ]
       {
         return;
       }
-    
+
       //Set the hash to starting position
       sumFast = sumSlow = 0;
 
@@ -208,16 +224,17 @@ void WBTVNode::decodeChar(unsigned char chr)
         //Because we only want to hash the message not our empty space which was not there in the original
         if(! (i==headerTerminatorPosition))
         {
+
           updateHash((message[i]));
         }
-        #ifdef HASH_STX
+#ifdef HASH_STX
         //We know that there was a tilde dividing header and message, or else we would not have put the divider there!
         else
         {
           updateHash('~');
         }
-        #endif
-          
+#endif
+
       }
 
       //Check the hash, and check that the headerTerminatorPosition variable is not zero, because if that was zero, it would mean
@@ -295,7 +312,7 @@ unsigned char WBTVNode::writeWrapper(unsigned char chr)
       return 1;
     }
   }
-
+  //Not wiredor, always return 1 because there is no way for this to be interfered with
   else 
   {
     return 1;
@@ -307,7 +324,7 @@ unsigned char WBTVNode::escapedWrite(unsigned char chr)
   unsigned char x;
 
   x = 1;
-  
+
   //If chr is a special character, escape it first
   if (chr == STH)
   {
@@ -338,7 +355,7 @@ unsigned char WBTVNode::escapedWrite(unsigned char chr)
 
 //Block until the bus is free.
 //It does this by waiting a random time and making sure there are no transitions in that period
-//This should be fixed to have better resolution than 1ms, however the collision detection and immediate retry means that
+//the collision detection and immediate retry means that
 //even a relatively high rate of collisions should not cause problems.
 
 //A cool side effect of this is that in many cases nodes will be able to "wait out" noise on the bus
@@ -350,7 +367,8 @@ wait:
   time = random(MIN_BACKOFF , MAX_BACKOFF);
 
   //While it has been less than the required time, just loop. Should the bus get un-idled in that time, totally restart.
-  // The performance of the loop is really pooptastic, because  digital reads take 1us of so and there is a divide operation in the micros() 
+  // The performance of the loop is really pooptastic, because  digital reads take 1us of so and there is a divide operation in the 
+  //micros() 
   //implementation. Still, this should arbitrate well enough.
   while( (micros()-start) < time)
   {
@@ -360,23 +378,26 @@ wait:
     {
       goto wait;
     }
-        //We directly read from the pin to determine if it is idle, that lets us catch the 
+    //We directly read from the pin to determine if it is idle, that lets us catch the 
     if (!(digitalRead(sensepin)== BUS_IDLE_STATE))
     {
       goto wait;
     }
-        //We directly read from the pin to determine if it is idle, that lets us catch the 
+    //We directly read from the pin to determine if it is idle, that lets us catch the 
     if (!(digitalRead(sensepin)== BUS_IDLE_STATE))
     {
       goto wait;
     }
-        //We directly read from the pin to determine if it is idle, that lets us catch the 
+    //We directly read from the pin to determine if it is idle, that lets us catch the 
     if (!(digitalRead(sensepin)== BUS_IDLE_STATE))
     {
       goto wait;
     }
   }
 }
+
+
+
 
 
 
