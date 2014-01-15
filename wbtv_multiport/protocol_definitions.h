@@ -16,4 +16,4 @@
 
 #define MAX_BACKOFF 300
 #define MIN_BACKOFF 130
-
+//#define HASH_STX

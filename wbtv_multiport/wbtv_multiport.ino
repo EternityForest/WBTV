@@ -32,7 +32,7 @@ void loop()
   }
  
   //If it has been long enough since the last one, send another message with the analog value
-  if ((millis()-timeLastSent) >2500)
+  if ((millis()-timeLastSent) >500)
   {
     a5val = analogRead(A5);
     timeLastSent = millis();

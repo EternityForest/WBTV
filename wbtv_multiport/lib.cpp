@@ -103,14 +103,17 @@ waiting:
 
     }
   }
+
   //Send the start-of-message(end of header)
   if (!writeWrapper(STX))
   {
     goto waiting;
   }
+
 #ifdef HASH_STX
   updateHash(STX);
 #endif
+
   //Send the message(escaped)
   for (i = 0; i<datalen;i++)
   {
@@ -122,8 +125,10 @@ waiting:
     }
   }
 
-  //Send the two bytes of the checksum
+  //Send the two bytes of the checksum, After doing the proper fletcher derivation.
+  //When the reciever hashses the message along with the checksum,the result should be 0.
   if (!escapedWrite(sumSlow))
+
   {
     goto waiting;
   }
@@ -190,6 +195,7 @@ void WBTVNode::decodeChar(unsigned char chr)
       message[recievePointer] = 0; //Null terminator between header and data makes string callbacks work
       recievePointer ++;
       return;
+
     }
 
     //Handle end of packet
@@ -208,27 +214,26 @@ void WBTVNode::decodeChar(unsigned char chr)
         return;
       }
 
-      //Set the hash to starting position
-      sumFast = sumSlow = 0;
-
       //not possible to be a valid message becuse len(checksum) = 2
       if(recievePointer <2)
       {
         return;
       }
+      
+      //Reset the hash state to calculate a new hash
+      sumFast=sumSlow=0;
+
       //Hash the packet
       for (i=0; i< recievePointer-2;i++)
 
       {
         //Ugly slow hack to deal with the empty space we put in
-        //Because we only want to hash the message not our empty space which was not there in the original
         if(! (i==headerTerminatorPosition))
         {
-
           updateHash((message[i]));
         }
+
 #ifdef HASH_STX
-        //We know that there was a tilde dividing header and message, or else we would not have put the divider there!
         else
         {
           updateHash('~');
@@ -237,25 +242,23 @@ void WBTVNode::decodeChar(unsigned char chr)
 
       }
 
-      //Check the hash, and check that the headerTerminatorPosition variable is not zero, because if that was zero, it would mean
-      //That we never recieved the STX char,and it was still at zero.
-      if ( (message[recievePointer-1]== sumFast) && (message[recievePointer-2]== sumSlow))
+      //Check the hash
+      if ((message[recievePointer-1]== sumFast) & (message[recievePointer-2]== sumSlow))
       {
-        message[recievePointer-1] = 0; //Null terminator for people using the string callbacks.
+        message[recievePointer-2] = 0; //Null terminator for people using the string callbacks.
         if(callback)
         {
-          callback((unsigned char*)message , 
-          headerTerminatorPosition, 
+          callback((unsigned char*)message ,
+          headerTerminatorPosition,
           (unsigned char *)message+headerTerminatorPosition+1, //The plus one accounts for the null terminator we put in
-          recievePointer-(headerTerminatorPosition+3)); //Would be plus 2 for the checksum but we have the null byte inserted so it's plus 1
+          recievePointer-(headerTerminatorPosition+1)); //Would be plus 2 for the checksum but we have the null byte inserted so it's plus 1
         }
         else
         {
-          stringCallback((unsigned char*)message , 
-          (unsigned char *)message+headerTerminatorPosition+1); //The plus one accounts for the null terminator we put in
+          stringCallback((unsigned char*)message ,
+          (unsigned char *)message+headerTerminatorPosition);
         }
       }
-
       return;
     }
   }
@@ -395,6 +398,8 @@ wait:
     }
   }
 }
+
+
 
 
 
