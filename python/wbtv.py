@@ -5,6 +5,9 @@ class Node():
         "Given the name of a serial port and baudrate, init the node"
         self.s = serial.Serial(port,baudrate=speed)
         self.messages = []
+        self.lastEmptiedTraffic = time.time()
+        self.avgTraffic =0
+        self.totalTraffic=0
         def f(x,y):
             self.messages.append((x,y))
 
@@ -15,6 +18,17 @@ class Node():
             Process all new bytes that have been recieved since the last time this was called, and return all new messages as
             a list of tuples (channel,message) in order recieved.
         """
+        
+        #calculate the average traffic(note that send also records its traffic)
+        self.totalTraffic+= self.s.inWaiting()
+        
+        timesincelastemptied =time.time()-self.lastEmptiedTraffic
+        if timesincelastemptied>1:
+            self.avgTraffic = (self.avgTraffic*0.95)+((self.totalTraffic/timesincelastemptied)*0.05)
+            self.totalTraffic =0
+            self.lastEmptiedTraffic = time.time()
+            
+            
         x = self.s.read(self.s.inWaiting())
         for i in x:
             self.parser.parseByte(i)
@@ -27,8 +41,10 @@ class Node():
            NOTE: A PC Serial port is NOT fast enough for the CSMA stuff. You may get occasional lost messages with a normal usb to
            serial converter. Use the included leonardo usb to WBTV sketch"""
            
-        #Note that this just spews the data out the port and depends on the 
-        self.s.write(makeMessage(header,message))
+        #Note that this just spews the data out the port and depends on the
+        x = makeMessage(header,message)
+        self.totalTraffic += len(x)
+        self.s.write(x)
 
 class Hash():
     #This class implements the modulo 256 variant of the fletcher checksum
@@ -86,13 +102,14 @@ class Parser():
             return;
         #If the byte is a newline, that is the end of a message
         if byte == ord("\n"):
-            #Hash all but the last 2 bytes before the end of message marker, because the last two bytes are the checksum
             h = Hash()
+            #Hash the message, divider, and the checksum at the end of the message
             h.update(bytearray(self.header))
+            #h.update(b"~")
             h.update(bytearray(self.message[:-2]))
 
             #Compare our hash with the message checksum
-            if self.message[-2:] == h.value():
+            if self.message[-2:]==h.value():
                 #Call the callback and delegate processing our new message to it.
                 self.callback(bytes(self.header), bytes(self.message[:-2]))
             else:
@@ -143,9 +160,10 @@ def makeMessage(header,message):
         else:
             data.append(i)
         h.update(i)
-
+        
     #Now append the two checksum bytes        
     data.append(h.value()[0])
     data.append(h.value()[1])
     #And the newline which marks the end
     data += b'\n'
+    return data
