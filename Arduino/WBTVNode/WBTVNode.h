@@ -1,5 +1,7 @@
-#include "protocol_definitions.h"
+#ifndef _WBTVNode
+#define _WBTVNode
 #include <Arduino.h>
+#include "protocol_definitions.h"
 #include "HardwareSerial.h"
 #include <math.h>
 #include <stdio.h>
@@ -22,7 +24,7 @@ public:
   void sendMessage(const unsigned char * channel, const unsigned char channellen, const unsigned char * data, const unsigned char datalen);
   void stringSendMessage(const char *channel, const char *data);
   void decodeChar(unsigned char chr);
-
+  void service();
   WBTVNode( Stream *, int bus_sense_pin);
   WBTVNode( Stream *);
   
@@ -82,5 +84,5 @@ private:
   unsigned char datalen);
 
 };
-
+#endif
 

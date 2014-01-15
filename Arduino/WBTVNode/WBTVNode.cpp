@@ -1,4 +1,4 @@
-#include "wbtv.h"
+#include "WBTVNode.h"
 static unsigned char arrcmp(unsigned char * a, unsigned char * b, unsigned char len)
 {
   unsigned char i;
@@ -47,6 +47,7 @@ unsigned char ))
   callback = thecallback;
 }
 
+
 /*Set a function taking two strings as input to be called when a packet arrives*/
 void WBTVNode::setStringCallback(
 void (*thecallback)(
@@ -61,6 +62,7 @@ void WBTVNode::stringSendMessage(const char *channel, const char *data)
 {
   sendMessage((const unsigned char *)channel,strlen(channel),(const unsigned char *) data,strlen(data));
 }
+
 
 /*Given a channel as pointer to unsigned char, channel length, data, and data length, send it out the serial port.*/
 void WBTVNode::sendMessage(const unsigned char * channel, const unsigned char channellen, const unsigned char * data, const unsigned char datalen)
@@ -154,6 +156,18 @@ void WBTVNode::updateHash(unsigned char chr)
   //This is a fletcher-256 hash. Not quite as good as a CRC, but pretty good.
   sumSlow += chr;
   sumFast += sumSlow; 
+}
+
+void WBTVNode::service()
+{
+    if (! BUS_PORT->available())
+    {
+        return;
+    }
+    else
+    {
+      decodeChar(BUS_PORT->read());
+    }
 }
 
 //Process one incoming char

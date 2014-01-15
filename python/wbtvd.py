@@ -3,7 +3,7 @@ import sys,os,time,wbtv,sqlite3,atexit,struct
 tabledefs="""
 CREATE TABLE message
 (
-id INTEGER PRIMARY KEY,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
 time INTEGER DEFAULT(round( (julianday('now') - 2440587.5) *86400.0)),
 time_fraction REAL DEFAULT 0,
 origin TEXT DEFAULT "LOCAL",
@@ -45,6 +45,8 @@ atexit.register(cleandb)
 print("Listening")
 count = 0
 lastsenttime = 0
+
+highest_already_handled_outgoing_message =0
 try:
     
     while(1):
@@ -69,11 +71,11 @@ try:
                            (portname,"LOCAL",i[0],i[1]))
                 
             #Check the database for outgoing messages with destination ALL, PORTS, or our specific portname.
-            for i in db.execute('SELECT channel,data FROM message WHERE origin="LOCAL" AND (destination=? OR destination="PORT")',(portname,)):
+            for i in db.execute('SELECT channel,data FROM message WHERE origin="LOCAL" AND destination IN ("ALL", "PORT", "PORTS")',(portname,)):
                 n.send(*i)
                 
             #Same exact query, but for deleting. We delete all the messages we just sent, because we already shipped them out.
-            db.execute('DELETE FROM message WHERE origin="LOCAL" AND (destination=? OR destination="PORT")',(portname,))
+            db.execute('DELETE FROM message WHERE origin="LOCAL" AND  destination IN ("ALL", "PORT", "PORTS")',(portname,))
             
             #Now we delete all the just plain old messages, like ones older than 5 minutes. Nobody wants those.
             db.execute("DELETE FROM message WHERE time<?",(time.time()-(60*5),))
