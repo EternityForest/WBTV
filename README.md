@@ -44,7 +44,7 @@ Connect your RX pins directly to the bus.
 
 WBTVClock_get_time()
 
-Returns a struct with two fields, one is a 64 bit unix timestamp, the other a
+Returns a struct called a WBTV_Time_t with two fields, one is a 64 bit unix timestamp, the other a
 32 bit unsigned binary fraction part of the current time.
 
 WBTVClock_error
@@ -58,6 +58,8 @@ automatically keep track of TIME broadcasts. TIME messages contain their
 own estimated error, so a device will ignore TIME messages that do not advertise
 at least as much accuracy as the current internal estimate
 (based on the error in the initial setting plus 0.5% of the time elapsed since being set)
+WBTVNode also takes into account uncertainty in determining message arrival time
+by keeping track of the polling rate
     
 WBTVNode(stream *)
 Represents one direct point to point WBTV packet connection.
@@ -68,9 +70,34 @@ WBTVNode(stream *, pin#)
 Creates a WBTV node for accessing a bus. The pin number must be the RX pin.
 This pin is used for collision avoidance and detection.
 
+WBTVNode.service()
+Tell the node to check the serial buffer, process up to one character,
+and when a complete message is recieved, either pass it off to the registered callback
+or, if it is a TIME message, use it to set the internal clock.
+This will block either only for microseconds while processing one byte,
+or for as long as the callback takes when processing a full message.
 
 WBTVNode.sendMessage(byte * channel, byte channellen, byte * data, byte datalen)
-    Send a message that my contain NULs by supplying a channel and a length
-    
+Send a message that my contain NULs by supplying a channel and a length.
+This function will block until the message has been succesfully sent, which could
+be a while if the network is overly loaded or if there is an eletrical problem.
+
+WBTVNode.stringSendMessage(char *channel, char * data)
+Send a message where the channel and data are null terminated strings.
+The actual packet format is the same as a binary message.
+
+WBTVNode.setBinaryCallback(function * f)
+Tell a WBTV node object to pass off any incoming messages to f.
+f must take (unsigned char *channel, unsigned char channellen, unsigned char* data, unsigned char * datalen)
+
+WBTVNode.setStringCallback(f)
+Same as the binary verision, but f takes only two strings, channel and data.
+Incoming messages with nulls in them will appear truncated.
+
+WBTVClock_set_time(long long time, unsigned int fraction, unsigned long error)
+Set the internal clock, where time is the current UNIX time number, fraction is the fraction part
+in 2**16ths of a second, and error is how much error you estimate to be present in the time, in
+2**16ths of a second. 4294967294 represents "Too much error to count but better than being totally unsynchronized"
+
 
     
