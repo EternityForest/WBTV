@@ -14,6 +14,13 @@
 #define EOT '\n'
 #define ESC '\\'
 
-#define MAX_BACKOFF 300
-#define MIN_BACKOFF 130
-//#define HASH_STX
+
+#define HASH_STX
+
+//Comment this to disable recording the packet arrival times.
+#define RECORD_TIME
+
+//Comment this to disable automatic handling of certain messages.
+//If left enabled, TIME broadcasts will be handled automatically for you,
+//And millisecond level time access functions will be provided.
+#define ADV_MODE

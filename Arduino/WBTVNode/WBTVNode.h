@@ -37,10 +37,21 @@ public:
 
   void setStringCallback(
   void (*thecallback)(
-  unsigned char *, 
-  unsigned char *));
-
-private:
+   char *, 
+   char *));
+  
+  unsigned int MIN_BACKOFF = 1100;
+  unsigned int MAX_BACKOFF = 1200;
+  #ifdef ADV_MODE
+  void sendTime();
+  #endif
+#ifdef RECORD_TIME
+  unsigned long message_start_time;
+  unsigned long lastServiced;
+  unsigned int message_time_error;
+  unsigned char message_time_accurate;
+#endif
+private:   
   //Pointer to the place to put the new char
   unsigned char recievePointer = 0;
   //Place to keep track of where the header stops and data begins
@@ -66,8 +77,8 @@ private:
   unsigned char );
   
   void (*stringCallback)(
-  unsigned char *,  
-  unsigned char *);
+   char *,  
+   char *);
 
 
   Stream *BUS_PORT;
@@ -82,7 +93,23 @@ private:
   unsigned char headerlen, 
   unsigned char * data, 
   unsigned char datalen);
+  
+  unsigned char internalProcessMessage();
 
 };
+
+struct WBTV_Time_t
+{
+    long long seconds;
+    unsigned int fraction;
+};
+
+#ifdef ADV_MODE
+struct WBTV_Time_t WBTVClock_get_time();
+void WBTVClock_set(WBTVNode);
+extern unsigned long WBTVClock_error;
+#define WBTV_CLOCK_UNSYNCHRONIZED 4294967295
+#define WBTV_CLOCK_HIGH_ERROR 4294967294
+#endif
 #endif
 

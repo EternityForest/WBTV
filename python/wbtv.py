@@ -67,7 +67,7 @@ class Hash():
 
     def value(self):
         """Return the has state as a byte array"""
-        return bytearray([self.slow%256,self.fast%256])
+        return bytes([self.slow%256,self.fast%256])
 
 class Parser():
     def __init__(self,callback):
@@ -104,9 +104,9 @@ class Parser():
         if byte == ord("\n"):
             h = Hash()
             #Hash the message, divider, and the checksum at the end of the message
-            h.update(bytearray(self.header))
-            #h.update(b"~")
-            h.update(bytearray(self.message[:-2]))
+            h.update(bytes(self.header))
+            h.update(ord("~"))
+            h.update(bytes(self.message[:-2]))
 
             #Compare our hash with the message checksum
             if self.message[-2:]==h.value():
@@ -114,7 +114,7 @@ class Parser():
                 self.callback(bytes(self.header), bytes(self.message[:-2]))
             else:
                 #Create a message that tells the callback there was an error, if it is interested.
-                self.callback(b'CONV',b"CSERR")
+                self.callback(b'CONV',b"CSERR"+self.header)
             return
 
         #If the byte is a bang, that starts a new message, discarding anything we might have been processing.
@@ -142,7 +142,7 @@ def makeMessage(header,message):
     data = bytearray(b'!')
     
     #Add all the bytes of the header, and hash them, but prepend escapes as needed.
-    for i in bytearray(header):
+    for i in bytes(header):
         if i in ["\n","~","."]:
             data .append('\\')
             data.append(i)
@@ -152,8 +152,9 @@ def makeMessage(header,message):
 
     #Add the separator between message and data.
     data += b'~'
+    h.update(ord('~'))
     #Same as we did for the header
-    for i in bytearray(message):
+    for i in bytes(message):
         if i in ["!","~","."]:
             data.append('\\' )
             data.append(i)
