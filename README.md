@@ -60,8 +60,9 @@ If you really need accurate time, use a GPS reciever to set the clock.
 ####WBTV_Clock_error_per_second
 This 16 bit value represents the estimated accuracy of the internal oscillator.
 It is in parts per 2**16, and defaults to 2500, or 4%.
-Suggested conservative values based on your crystal:
-    0.5% = 350(Arduino
+Suggested conservative values based on your crystal
+
+    0.5% = 350(Common ceramic resonator)
     250ppm = 20
     100ppm = 10
     20ppm = 3
