@@ -44,7 +44,7 @@ Connect your RX pins directly to the bus.
 
 ####WBTVClock_get_time()
 
-Returns a struct with two fields, one is a 64 bit unix timestamp, the other a
+Returns a struct called a WBTV_Time_t with two fields, one is a 64 bit unix timestamp, the other a
 32 bit unsigned binary fraction part of the current time.
 The WBTV clock is automatically set by incoming TIME messages, and can be manally set.
 
@@ -91,7 +91,14 @@ Macro for 4294967295, which means the clock has never been synchronized.
 
 ####WBTV_CLOCK_HIGH_ERROR
 Macro for 4294967294, meaning the error is too high to count(Greater than 20 minutes or so)
-    
+
+####WBTVNode.service()
+Tell the node to check the serial buffer, process up to one character,
+and when a complete message is recieved, either pass it off to the registered callback
+or, if it is a TIME message, use it to set the internal clock.
+This will block either only for microseconds while processing one byte,
+or for as long as the callback takes when processing a full message. 
+
 ####WBTVNode(stream *)
 Represents one direct point to point WBTV packet connection.
 Used for e.g. the leonardo's USB to serial. This assumes a full duplex
@@ -106,6 +113,7 @@ Send a message that my contain NULs by supplying a channel and a length
 
 ####WBTVNode.stringSendMessage(char * channel, char * data)
 Same as sendMessage, but uses null terminated strings instead of pointer-length pairs.
+
 
 ####WBTVNode.setStringCallback(f)
 Set the callback to handle new messages.
