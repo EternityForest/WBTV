@@ -108,8 +108,19 @@ struct WBTV_Time_t
 struct WBTV_Time_t WBTVClock_get_time();
 void WBTVClock_set(WBTVNode);
 extern unsigned long WBTVClock_error;
+extern unsigned short WBTVClock_error_per_second;
 #define WBTV_CLOCK_UNSYNCHRONIZED 4294967295
 #define WBTV_CLOCK_HIGH_ERROR 4294967294
+#define WBTVClock_invalidate() WBTVClock_error_per_second = 4294967294
 #endif
+
+/**Read one of whatever data type from the pointer you give it, then increment
+ *the pointer by the size of the data type.
+ *Example:
+ *read_increment(x,unsigned char)
+ *will return the value under the pointer, then increment the pointer by one.
+ */
+#define read_interpret(ptr,type) (*(type*)((ptr=ptr+sizeof(type))-sizeof(type)))
+
 #endif
 

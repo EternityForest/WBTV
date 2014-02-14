@@ -3,14 +3,55 @@
 
 #ifdef ADV_MODE
 struct WBTV_Time_t WBTVClock_Sys_Time;
+/**
+ *The current estimate of accumulated error in WBTVs system clock.
+ *The error is measured in 2**16ths of a second, but it saturates at 4294967294 and does not roll over.
+ *4294967295 is reserved for when the time has never been set.
+ */
+
 unsigned long WBTVClock_error = 4294967295; // The accumulated error estimator in seconds/2**16
 
 //Assume an error per second of about 5000PPM, which is about 10 minutes in day,
 //Which is approximately what one gets with ceramic resonators.
-unsigned int WBTV_Clock_error_per_second = 650;
+
+/**This is how much error you estimate to accumulate per second with the built in crystal.
+ * The error is measured in parts per 2**16. The default is 2500 or about 4%
+ * This is very conservative and the arduino's crystal is more like 0.1% or better.
+ * However some other devices may have much more error.
+ * The default is 4% becuase UARTs don't work well with more error than that so it's
+ * A safe assumtion.
+ */
+unsigned int WBTVClock_error_per_second = 2500;
 
 unsigned long WBTVClock_prevMillis = 0;
 
+/*Manually set the WBTV Clock. time must be the current UNIX time number,
+ *fraction is the fractional part of the time in 2**16ths of a second,
+ *error_ms is the error in 2**16ths of second that you estimate your source of timing to contain.
+ *Times entered by humans should always be suspect to be several minutes off.
+*/
+void WBTVClock_set_time(long long time, unsigned int fraction, unsigned long error)
+{
+    //If our estimated internal time accuracy is better than whatever this new
+    //Time Source alledges, then avoid making the accuracy worse.
+    if (error>WBTVClock_error)
+    {
+        return;
+    }
+    WBTVClock_prevMillis=millis();
+    
+    WBTVClock_prevMillis -= fraction >>6;
+    //Now we add the fraction value divided by 2**12
+    //To compensate for dividing by 64 being too much.
+    WBTVClock_prevMillis += fraction >>12;
+    WBTVClock_prevMillis += fraction >>13;
+    WBTVClock_error = error; 
+}
+
+/**
+ *Returns the current time as a struct, the integer part called seconds
+ *and the 16 bit fraction part called time.
+ */
 struct WBTV_Time_t WBTVClock_get_time()
 {
 unsigned long temp;
@@ -22,7 +63,7 @@ while(temp - WBTVClock_prevMillis >= 1000){
     WBTVClock_prevMillis += 1000;
     if (WBTVClock_error<4294900000)
     {
-    WBTVClock_error+= WBTV_Clock_error_per_second;
+    WBTVClock_error+= WBTVClock_error_per_second;
     }
     else
     {
@@ -46,15 +87,21 @@ while(temp - WBTVClock_prevMillis >= 1000){
 
 #endif
 
-//Constructor for a wired or(listen before transmit) version
-WBTVNode::WBTVNode(Stream *port,int bus_sense_pin)
+/*
+ *Instantiate a wired-OR WBTV node with CSMA, collision avoidance,
+ *and collision detection. bus_sense_pin must be the RX pin, and
+ *port must be a Serial or other stream object
+ */
+ WBTVNode::WBTVNode(Stream *port,int bus_sense_pin)
 {
   BUS_PORT=port;
   sensepin = bus_sense_pin;
   wiredor = 1;
 }
 
-//Constructor for a full duplex version
+/*
+ *This lets you use WBTV over full duplex connections like usb to serial.
+ */
 WBTVNode::WBTVNode(Stream *port)
 {
   BUS_PORT=port;
