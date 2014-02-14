@@ -1,5 +1,0 @@
-import time
-while 1:
-	if (time.time()%1)<0.01:
-		print(time.time())
-		time.sleep(0.8)

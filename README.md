@@ -42,12 +42,36 @@ Connect your RX pins directly to the bus.
         }
 ###API(Incomplete documentation)
 
-WBTVClock_get_time()
+####WBTVClock_get_time()
 
 Returns a struct with two fields, one is a 64 bit unix timestamp, the other a
 32 bit unsigned binary fraction part of the current time.
+The WBTV clock is automatically set by incoming TIME messages, and can be manally set.
 
-WBTVClock_error
+
+####WBTVClock_set_time(long long time, uint16_t fraction, uint32_t error)
+Set the WBTV internal clock by passing the current UNIX time number as a long long,
+the fractional part of the time in seconds/2**16, and the estimated error of the time source
+in seconds/2**16. Should the error be too great to represent in 32 bits, use 4294967294.
+Human entered times should be suspect and should have an estimated error of at least several minutes.
+
+If you really need accurate time, use a GPS reciever to set the clock.
+
+####WBTV_Clock_error_per_second
+This 16 bit value represents the estimated accuracy of the internal oscillator.
+It is in parts per 2**16, and defaults to 2500, or 4%.
+Suggested conservative values based on your crystal:
+    0.5% = 350(Arduino
+    250ppm = 20
+    100ppm = 10
+    20ppm = 3
+    10ppm or better = 1;
+
+####WBTVClock_invalidate()
+Tell WBTV that it's current time is inaccurate. Used to force manual setting.
+This is just a macro that sets the error.
+
+####WBTVClock_error
 
 The error estimate of the clock in seconds/2**16
 The special value 4294967295 means totally unsynchronized,
@@ -56,21 +80,54 @@ and 4294967294 means synchronized but the error is greater than can be represent
 You do not need to do anything to synchronize the clock, WBTVNode objects
 automatically keep track of TIME broadcasts. TIME messages contain their
 own estimated error, so a device will ignore TIME messages that do not advertise
-at least as much accuracy as the current internal estimate
-(based on the error in the initial setting plus 0.5% of the time elapsed since being set)
+at least as much accuracy as the current internal estimate.
+(based on the error in the initial setting plus 4% of the time elapsed since being set)
+
+Crystals are almost always better than 4%, but we are conservative and we want to account for
+devices using the internal resonator.
+
+####WBTV_CLOCK_UNSYNCHRONIZED
+Macro for 4294967295, which means the clock has never been synchronized.
+
+####WBTV_CLOCK_HIGH_ERROR
+Macro for 4294967294, meaning the error is too high to count(Greater than 20 minutes or so)
     
-WBTVNode(stream *)
+####WBTVNode(stream *)
 Represents one direct point to point WBTV packet connection.
 Used for e.g. the leonardo's USB to serial. This assumes a full duplex
 channel and doesn't do any of the wired-OR or CSMA/CD stuff.
 
-WBTVNode(stream *, pin#)
+####WBTVNode(stream *, pin#)
 Creates a WBTV node for accessing a bus. The pin number must be the RX pin.
 This pin is used for collision avoidance and detection.
 
+####WBTVNode.sendMessage(byte * channel, byte channellen, byte * data, byte datalen)
+Send a message that my contain NULs by supplying a channel and a length
 
-WBTVNode.sendMessage(byte * channel, byte channellen, byte * data, byte datalen)
-    Send a message that my contain NULs by supplying a channel and a length
-    
+####WBTVNode.stringSendMessage(char * channel, char * data)
+Same as sendMessage, but uses null terminated strings instead of pointer-length pairs.
+
+####WBTVNode.setStringCallback(f)
+Set the callback to handle new messages.
+f is a function pointer to a function taking two char *'s , the channel and the data.
+
+####WBTVNode.setBinaryCallback(f)
+Set the binary callback. f takes (unsigned char * channel, unsigned char channellen, unsigned char* data, unsigned char datalen)
+Note there may only be one callback at a time. string and binary callbacks both delete whatever callback was already there.
+
+####read_interpret(unsigned char*, type)
+This is a macro you may find useful when parsing the contents of a message.
+You pass it a pointer and a type, and it takes the first sizeof(type) bytes from the pointer
+and interprets them as type and returns that, then it increments the pointer by that that many bytes.
+
+This is very useful for when you have a message that contains several values of different types.
+
+Example:
+    x = read_interpret(ptr, float)
+
+Will take the first 4 bytes at the pointer, interpret them as a float and return that, and then
+increment the pointer by four.
+
+This lets you treat a pointer as a stream of various different types.
 
     
