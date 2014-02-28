@@ -370,6 +370,8 @@ void WBTVNode::decodeChar(unsigned char chr)
         }
         #endif
         message[recievePointer-2] = 0; //Null terminator for people using the string callbacks.
+        
+        //If there is a callback set up, use it.
         if(callback)
         {
           callback((unsigned char*)message ,
@@ -379,11 +381,25 @@ void WBTVNode::decodeChar(unsigned char chr)
         }
         else
         {
-        if (stringCallback)
-        {
-          stringCallback((char*)message ,
-          (char *)message+headerTerminatorPosition);
-        }
+            //If there are any NUL bytes in the header, just return.
+            //Presumably nobody would register a string callback
+            //that listens on a channel with 0s in its data
+            //but the channel needs to be checked to prevent against
+            //channels that start with the name of the string channel
+            //and then a null.
+            for(i=0;i<headerTerminatorPosition;i++)
+            {
+                if (message[i] ==0)
+                    {
+                        return;
+                    }
+            }
+            //Veriied that the channel name is safe. now we hand it off to the callback
+            if (stringCallback)
+            {
+              stringCallback((char*)message ,
+              (char *)message+headerTerminatorPosition);
+            }
         }
       }
       return;
@@ -601,10 +617,6 @@ unsigned char WBTVNode::internalProcessMessage()
             
             WBTVClock_prevMillis=message_start_time;
             WBTVClock_error = error_temp;
-            //////////////////
-            Serial.print("!");
-            Serial.print(error_temp);
-            Serial.print("\n");
             //5 Accounts for the 5 bytes of
             WBTVClock_Sys_Time.seconds = *(long long*) (message+5);
             //Message+ten= 8 to skip over the seconds part, and 2 to get to the 2 most significant bytes
@@ -742,8 +754,6 @@ void WBTVNode::sendTime()
             temp = temp>>1;
             
         }
-        
-    
     
     if(!escapedWrite(count))
         {
