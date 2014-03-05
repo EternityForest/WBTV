@@ -12,7 +12,7 @@ The protocol is based on the concept of posting "messages" to "channels", simila
 
 The message structure is very simple
 
-!!<channel>~<data>CS\n
+    !!<channel>~<data>CS\n
 
 Every message begins with an exclamation point, followed by the channel, than a tilde, than the actual data of the message, then a two-byte checksum(more on that later), followed by a newline as an end of message indicator.
 
