@@ -4,8 +4,31 @@ WBTV
 pseudo-pubsub for embedded devices using wired-OR. Under heavy development, may or may not work at any given
 moment. API may change. Protocl may change. Should be finalized within a few weeks.
 
+##Protocol Summary
+
+The protocol works over wired-OR busses, such as a single wire pulled to 5V and driven with open collector outputs, or CAN bus hardware.
+
+The protocol is based on the concept of posting "messages" to "channels", similar to how CANBus attatches message IDs to messages, or how message-oriented middleware works.
+
+The message structure is very simple
+
+!!<channel>~<data>CS\n
+
+Every message begins with an exclamation point, followed by the channel, than a tilde, than the actual data of the message, then a two-byte checksum(more on that later), followed by a newline as an end of message indicator.
+
+Generally an extra exclamation point is sent before the "real" start of message on the off chance that there was noise on the bus that looked like an escape character.
+
+If a tilde, an exclamation point, or a newline needs to appear in the data,channel name, or checksum, it can simply be escaped by using a backslash. Backslashes also escape themselves.
+
+WBTV is multi-drop through a mechanism called carrier-sense multiple access. When a device wants to send, it first listens to ensure the bus is not busy. While sending, it monitors the bus to detect interference. When interference is detected, both devices back off for a random period and retry.
+
+The use of control characters as delimiters rather than length bytes makes cancelling and retrying a failed transmission much simpler and faster as there is no need to wait for a timeout period to elapse.
+
+The actual documentation includes information about reserved channel names that add compatibility, such as a standard way to send the current time over the bus, and ways of automatic device discovery are in the works.
 
 ##Arduino Library
+
+An Arduino library which should work with any Arduino clone or compatible board also has been provied, supporting multiple interfaces on one board, wired-OR and full duplex links, and automatic handling of TIME messages.
 
 ###Electrical Connections
 
@@ -110,18 +133,26 @@ Creates a WBTV node for accessing a bus. The pin number must be the RX pin.
 This pin is used for collision avoidance and detection.
 
 ####WBTVNode.sendMessage(byte * channel, byte channellen, byte * data, byte datalen)
-Send a message that my contain NULs by supplying a channel and a length
+Send a message that my contain NULs by supplying a channel and a length.
+Note that this is a blocking function when used with wired-OR busses,
+and the time cannot be predicted without knowing the full list of devices on the bus.
+Heavily loaded networks may block for a long time, and if the termination resistor fails and nothing pulls the bus up,
+this function may block indefinately.These drawbacks are considered acceptable in the low risk/non critical, low speed, consumer type applications WBTV was intended for.
+
+This function, when used with WBTV over point to point(full duplex) links, should not block for any longer than one would expect a similar Serial.print statement to block for. 
 
 ####WBTVNode.stringSendMessage(char * channel, char * data)
-Same as sendMessage, but uses null terminated strings instead of pointer-length pairs.
+Same as sendMessage, but uses null terminated strings instead of pointer-length pairs. Blocks(or doesn't block) in the same way as the binary version.
 
 
 ####WBTVNode.setStringCallback(f)
 Set the callback to handle new messages.
-f is a function pointer to a function taking two char *'s , the channel and the data.
+f is a function pointer to a function taking two char *'s , the channel and the data. If you use a string callback, any message with a NUL byte in the channel name will simply be dropped and ignored. Messages with NULs in the actuall data may still get through and appear truncated to any function depending on the null terminator. 
 
 ####WBTVNode.setBinaryCallback(f)
 Set the binary callback. f takes (unsigned char * channel, unsigned char channellen, unsigned char* data, unsigned char datalen)
+
+
 Note there may only be one callback at a time. string and binary callbacks both delete whatever callback was already there.
 
 ####read_interpret(unsigned char*, type)
