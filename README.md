@@ -37,6 +37,8 @@ Pull up the bus wire with a 4.7k or so resistor, connect all your TX pins to the
 using a diode(facing the TX pins), to make them act as pen collector ouputs.
 Connect your RX pins directly to the bus.
 
+To use with a simple point-to-point connection, connect the RX of the first board to the TX of the other just like any other serial connection. You can also use WBTV in a one-way link.
+
 ###SW Example
     #include "WBTVNode.h"
     
