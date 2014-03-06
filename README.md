@@ -28,7 +28,12 @@ The actual documentation includes information about reserved channel names that 
 
 ##Arduino Library
 
-An Arduino library which should work with any Arduino clone or compatible board also has been provied, supporting multiple interfaces on one board, wired-OR and full duplex links, and automatic handling of TIME messages.
+An Arduino library which should work with any Arduino clone or compatible board also has been provied, supporting multiple interfaces on one board, wired-OR and full duplex links, random number generation, and automatic handling of TIME messages.
+
+The decision to include random numbers was based on tight integration with WBTV so as to gather entropy from network traffic,
+and because WBTV requires random numbers for network timing and backoffs, and the avr-libc generator is several hundred bytes larger than the builtin RNG that WBTV has. User access is provided to the entropy pool to allow access to the gathered entropy and reduce the sketch size.
+
+TIME handling is included because sending a TIME message is a low level action requiring millisecond level timing for the best results.
 
 ###Electrical Connections
 
@@ -65,7 +70,57 @@ To use with a simple point-to-point connection, connect the RX of the first boar
             //Do something with the message you just got here.
             //The message and data will be two null terminated strings.
         }
-###API(Incomplete documentation)
+###Arduino lib API(Incomplete documentation)
+
+####Creating WBTV Objects
+The library supports multiple interfaces, each associated with a stream.
+
+####WBTVNode(stream *)
+Represents one direct point to point WBTV packet connection.
+Used for e.g. the leonardo's USB to serial. This assumes a full duplex
+channel and doesn't do any of the wired-OR or CSMA/CD stuff.
+
+####WBTVNode(stream *, pin#)
+Creates a WBTV node for accessing a bus. The pin number must be the RX pin.
+This pin is used for collision avoidance and detection.
+
+
+####The Built in Entropy Pool
+WBTVNode maintains an internal 32-bit modified XORshift RNG which may be faster than the RNG functions on your platform.
+Whenever a new packet arrives, the packet arrival time, and the checksum of the packet is mixed into the state.
+Every time you request a random number, the exact micros() value of the request is mixed in. Therefore the random numbers depends on the complete history of arriving messages, and the exact time at which you request the number, making them likely suitable for anything except cryptographic purposes.
+
+The generator however should be sufficient for UUID generation or even low-end cryptography if the pool is used to whiten a suitable input stream, by using WBTV_doRand(x) to mix in data. Mixing in several seconds of noisy ADC readings should be enough to generate a byte of two of decent numbers, but remember the pool can only hold a very small amount of entropy due to it's 32 bit size.
+
+The entropy pool is global, as are all functions associated with it, and is shared by all interfaces.
+
+####WBTV_rand(unsigned long max)
+Return a random number from the WBTV internal entropy pool from 0 to max inclusive.
+
+####WBTV_rand(long max, long min)
+Return a random integer between min and max inclusive.
+
+####WBTV_doRand([long seed])
+Mix the current micros() value into the entropy pool. You can call this when something that happens with
+unpredictable timing occurs. You can also supply the optional seed parameter to mix in additional entropy.
+I don't think there is any way calling this function with bad data or at the wrong time can hurt anything.
+You should be able to produce high-quality numbers by mixing in a lot of entropy for each byte you read.
+
+####WBTV_rawrand()
+Returns a raw 32 bit random value straight from the LFSR
+
+####WBTV_urand_byte()
+Return a single random byte.
+
+####The WBTV Internal Clock
+WBTV Maintains an estimate of the current UTC time of day by keeping track of TIME messages. TIME messages are not passed
+to user callbacks as the decoding of them is fairly complex.
+
+The WBTV internal clock maintains an estimate of the accumulated error. When a TIME message arrives, it is ignored unless it advertises equal or better accuracy to the internal current estimate.
+
+The clock uses an internal 1ms resolution based on the millis() value.
+
+The WBTV Clock, like the entropy pooling, is global and shared by all interfaces.
 
 ####WBTVClock_get_time()
 
@@ -118,21 +173,15 @@ Macro for 4294967295, which means the clock has never been synchronized.
 ####WBTV_CLOCK_HIGH_ERROR
 Macro for 4294967294, meaning the error is too high to count(Greater than 20 minutes or so)
 
+####WBTV Core Functions
+These are the functions dealing with sending and recieving messages.
+
 ####WBTVNode.service()
 Tell the node to check the serial buffer, process up to one character,
 and when a complete message is recieved, either pass it off to the registered callback
 or, if it is a TIME message, use it to set the internal clock.
 This will block either only for microseconds while processing one byte,
 or for as long as the callback takes when processing a full message. 
-
-####WBTVNode(stream *)
-Represents one direct point to point WBTV packet connection.
-Used for e.g. the leonardo's USB to serial. This assumes a full duplex
-channel and doesn't do any of the wired-OR or CSMA/CD stuff.
-
-####WBTVNode(stream *, pin#)
-Creates a WBTV node for accessing a bus. The pin number must be the RX pin.
-This pin is used for collision avoidance and detection.
 
 ####WBTVNode.sendMessage(byte * channel, byte channellen, byte * data, byte datalen)
 Send a message that my contain NULs by supplying a channel and a length.
@@ -154,8 +203,9 @@ f is a function pointer to a function taking two char *'s , the channel and the 
 ####WBTVNode.setBinaryCallback(f)
 Set the binary callback. f takes (unsigned char * channel, unsigned char channellen, unsigned char* data, unsigned char datalen)
 
-
 Note there may only be one callback at a time. string and binary callbacks both delete whatever callback was already there.
+
+####Useful Macros
 
 ####read_interpret(unsigned char*, type)
 This is a macro you may find useful when parsing the contents of a message.
