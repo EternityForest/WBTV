@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "protocol_definitions.h"
 #include "HardwareSerial.h"
+#include "WBTVRand.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>

@@ -272,9 +272,7 @@ void WBTVNode::decodeChar(unsigned char chr)
         //If it is not the only byte it cannon be trusted, so message time
         //accurate must be set to 0
         
-        #ifdef HIGH_ACCURACY
         message_start_time -= ((message_start_time-lastServiced)>>1);
-        #endif
         
         message_time_error = message_start_time-lastServiced;
         //If there is another byte in the stream, then consider the arrival time invalid. 
@@ -293,7 +291,14 @@ void WBTVNode::decodeChar(unsigned char chr)
       recievePointer = 0;
       headerTerminatorPosition = 0; //We need to set this to zero to recoginze missing data sections, they will look like 0 len headers because this wont move.
       garbage = 0;
-
+      
+      #ifdef WBTV_SEED_ARDUINO_RNG
+      randomSeed(micros()+random(100000);
+      #endif
+      
+      #ifdef WBTV_ENABLE_RNG
+      WBTV_doRand(sumSlow+micros());
+      #endif
 
       return;
     }
@@ -402,6 +407,14 @@ void WBTVNode::decodeChar(unsigned char chr)
             }
         }
       }
+      #ifdef WBTV_SEED_ARDUINO_RNG
+      randomSeed(sumSlow+random(100000);
+      #endif
+      
+      #ifdef WBTV_ENABLE_RNG
+      WBTV_doRand(sumSlow+micros());
+      #endif
+
       return;
     }
   }
@@ -510,7 +523,12 @@ void WBTVNode::waitTillICanSend()
   unsigned long start,time;
 wait:
   start = micros();
+  #ifdef WBTV_ENABLE_RNG
+  time = WBTV_rand(MIN_BACKOFF,MAX_BACKOFF);
+  #else
   time = random(MIN_BACKOFF , MAX_BACKOFF);
+  #endif
+  
 
   //While it has been less than the required time, just loop. Should the bus get un-idled in that time, totally restart.
   // The performance of the loop is really pooptastic, because  digital reads take 1us of so and there is a divide operation in the 
