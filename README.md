@@ -88,11 +88,11 @@ This pin is used for collision avoidance and detection.
 ####The Built in Entropy Pool
 WBTVNode maintains an internal 32-bit modified XORshift RNG which may be faster than the RNG functions on your platform.
 Whenever a new packet arrives, the packet arrival time, and the checksum of the packet is mixed into the state.
-Every time you request a random number, the exact micros() value of the request is mixed in. Therefore the random numbers depends on the complete history of arriving messages, and the exact time at which you request the number, making them likely suitable for anything except cryptographic purposes.
-
-The generator however should be sufficient for UUID generation or even low-end cryptography if the pool is used to whiten a suitable input stream, by using WBTV_doRand(x) to mix in data. Mixing in several seconds of noisy ADC readings should be enough to generate a byte of two of decent numbers, but remember the pool can only hold a very small amount of entropy due to it's 32 bit size.
+Every time you request a random number, the exact micros() value of the request is mixed in. Therefore the random numbers depends on the complete history of arriving messages, and the exact time at which you request the number(which is affected by the entire history of program execution, interrupts, etc), making them likely suitable for anything except cryptographic purposes.
 
 The entropy pool is global, as are all functions associated with it, and is shared by all interfaces.
+
+Note once again that the marsaglia XORShift generators are NOT cryptographically secure in any way, and that WBTV by default only uses 32 bits of PRNG state.
 
 ####WBTV_rand(unsigned long max)
 Return a random number from the WBTV internal entropy pool from 0 to max inclusive.
@@ -104,10 +104,12 @@ Return a random integer between min and max inclusive.
 Mix the current micros() value into the entropy pool. You can call this when something that happens with
 unpredictable timing occurs. You can also supply the optional seed parameter to mix in additional entropy.
 I don't think there is any way calling this function with bad data or at the wrong time can hurt anything.
-You should be able to produce high-quality numbers by mixing in a lot of entropy for each byte you read.
+You might be able to produce high-quality numbers by mixing in a lot of entropy for each byte you read.
+
+This function is the same as the internal RNG iteration function.
 
 ####WBTV_rawrand()
-Returns a raw 32 bit random value straight from the LFSR
+Returns a raw 32 bit random value straight from the LFSR.
 
 ####WBTV_urand_byte()
 Return a single random byte.
@@ -128,6 +130,11 @@ Returns a struct called a WBTV_Time_t with two fields, one is a 64 bit unix time
 32 bit unsigned binary fraction part of the current time.
 The WBTV clock is automatically set by incoming TIME messages, and can be manally set.
 
+####WBTVNode.sendTime()
+
+Send a standard WBTV TIME message containing th current internal clock value and the current
+internal error estimate. It is probably a bad idea to send TIME messages with the normal sendMessage API.
+Instead, set the clock and then use sendTime.
 
 ####WBTVClock_set_time(long long time, uint16_t fraction, uint32_t error)
 Set the WBTV internal clock by passing the current UNIX time number as a long long,
@@ -137,9 +144,12 @@ Human entered times should be suspect and should have an estimated error of at l
 
 If you really need accurate time, use a GPS reciever to set the clock.
 
+Note that this function will do absolutely nothing if error>current internal error estimate.
+Use WBTVClock_invalidate() first to force setting the time.
+
 ####WBTV_Clock_error_per_second
 This 16 bit value represents the estimated accuracy of the internal oscillator.
-It is in parts per 2**16, and defaults to 2500, or 4%.
+It is in parts per 2**16, and defaults to 2500, or 4%, but you can write a smallr value if your oscillator is better.
 Suggested conservative values based on your crystal
 
     0.5% = 350(Common ceramic resonator)
@@ -222,4 +232,10 @@ increment the pointer by four.
 
 This lets you treat a pointer as a stream of various different types.
 
-    
+####Untested Stuff
+
+This stuff might go through API changes, not work, or dissapear entirely later.
+
+#### WBTV_true_rand()
+This function is available on 32u4, 168, 328, and certain MSP430 boards with energia.
+It will read the temperature sensor a few hundred times to add about 1 byte of entropy to the entropy pool.
