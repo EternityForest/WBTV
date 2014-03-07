@@ -1,7 +1,7 @@
 #include "WBTVNode.h"
+#include "utility/WBTVRand.h"
 
-
-#ifdef ADV_MODE
+#ifdef WBTV_ADV_MODE
 struct WBTV_Time_t WBTVClock_Sys_Time;
 /**
  *The current estimate of accumulated error in WBTVs system clock.
@@ -160,16 +160,16 @@ waiting:
   //Basically, send bytes, if we get interfered with, go back to waiting
 
 
-#ifdef DUMMY_STH
-  //Sent dummy start code for reliabilty in case there was noise that looked like an ESC.
+#ifdef DUMMY_WBTV_STH
+  //Sent dummy start code for reliabilty in case there was noise that looked like an WBTV_ESC.
   //This is really just there for paranoia reasons but it's a nice addition and it's only one more byte.
-  if (!writeWrapper(STH))
+  if (!writeWrapper(WBTV_STH))
   {
     goto waiting;
   }
 #endif
 
-  if (!writeWrapper(STH))//Sent start code
+  if (!writeWrapper(WBTV_STH))//Sent start code
   {
     goto waiting;
   }
@@ -185,13 +185,13 @@ waiting:
   }
 
   //Send the start-of-message(end of header)
-  if (!writeWrapper(STX))
+  if (!writeWrapper(WBTV_STX))
   {
     goto waiting;
   }
 
-#ifdef HASH_STX
-  updateHash(STX);
+#ifdef HASH_WBTV_STX
+  updateHash(WBTV_STX);
 #endif
 
   //Send the message(escaped)
@@ -218,7 +218,7 @@ waiting:
     goto waiting;
   }
 
-  if (!writeWrapper(EOT))
+  if (!writeWrapper(WBTV_EOT))
   {
     goto waiting;
   }
@@ -251,7 +251,7 @@ lastServiced = millis();
 void WBTVNode::decodeChar(unsigned char chr)
 {
   //Set the garbage flag if we get a message that is too long
-  if (recievePointer > MAX_MESSAGE)
+  if (recievePointer > WBTV_MAX_MESSAGE)
   {        
     garbage = 1;
     recievePointer = 0;
@@ -260,9 +260,9 @@ void WBTVNode::decodeChar(unsigned char chr)
   //Handle the special chars
   if (!escape)
   {
-    if (chr == STH)
+    if (chr == WBTV_STH)
     {
-      #ifdef RECORD_TIME
+      #ifdef WBTV_RECORD_TIME
         //Keep track of when the msg started, or else time sync won't work.
         message_start_time = millis();
         
@@ -304,7 +304,7 @@ void WBTVNode::decodeChar(unsigned char chr)
     }
 
     //Handle the division between header and text
-    if (chr == STX)
+    if (chr == WBTV_STX)
     {
       //If this isn't 0, the default, then that would indicate a message with multiple segments,
       //which simply can't be handled by this library as it, so they are ignored.
@@ -323,7 +323,7 @@ void WBTVNode::decodeChar(unsigned char chr)
     }
 
     //Handle end of packet
-    if (chr == EOT)
+    if (chr == WBTV_EOT)
     {
       unsigned char i;
       if (garbage)//If this packet was garbage, throw it away
@@ -357,7 +357,7 @@ void WBTVNode::decodeChar(unsigned char chr)
           updateHash((message[i]));
         }
 
-#ifdef HASH_STX
+#ifdef HASH_WBTV_STX
         else
         {
           updateHash('~');
@@ -368,7 +368,7 @@ void WBTVNode::decodeChar(unsigned char chr)
       //Check the hash
       if ((message[recievePointer-1]== sumFast) & (message[recievePointer-2]== sumSlow))
       {
-        #ifdef ADV_MODE
+        #ifdef WBTV_ADV_MODE
         if (internalProcessMessage())
         {
         return;
@@ -419,7 +419,7 @@ void WBTVNode::decodeChar(unsigned char chr)
     }
   }
 
-  if ( chr == ESC)
+  if ( chr == WBTV_ESC)
   {
     if (!escape)
     {
@@ -429,7 +429,7 @@ void WBTVNode::decodeChar(unsigned char chr)
     else
     {
       escape = 0;
-      message[recievePointer] = ESC;
+      message[recievePointer] = WBTV_ESC;
       recievePointer ++;
       return;
     }
@@ -455,7 +455,7 @@ unsigned char WBTVNode::writeWrapper(unsigned char chr)
     start = millis();
     while (!BUS_PORT->available())
     {
-      if ((millis()-start)>MAX_WAIT)
+      if ((millis()-start)>WBTV_MAX_WAIT)
       {
         return 0;
       }
@@ -485,21 +485,21 @@ unsigned char WBTVNode::escapedWrite(unsigned char chr)
   x = 1;
 
   //If chr is a special character, escape it first
-  if (chr == STH)
+  if (chr == WBTV_STH)
   {
-    x = writeWrapper(ESC); 
+    x = writeWrapper(WBTV_ESC); 
   }
-  if (chr == STX)
+  if (chr == WBTV_STX)
   {
-    x= writeWrapper(ESC); 
+    x= writeWrapper(WBTV_ESC); 
   }
-  if (chr == EOT)
+  if (chr == WBTV_EOT)
   {
-    x = writeWrapper(ESC); 
+    x = writeWrapper(WBTV_ESC); 
   }
-  if (chr == ESC)
+  if (chr == WBTV_ESC)
   {
-    x =writeWrapper(ESC); 
+    x =writeWrapper(WBTV_ESC); 
   }
 
   //If the escape succeded(or there was no escape), then send the char, and return it's sucess value
@@ -520,7 +520,7 @@ unsigned char WBTVNode::escapedWrite(unsigned char chr)
 //A cool side effect of this is that in many cases nodes will be able to "wait out" noise on the bus
 void WBTVNode::waitTillICanSend()
 {
-  unsigned long start,time;
+unsigned long start,time;
 wait:
   start = micros();
   #ifdef WBTV_ENABLE_RNG
@@ -538,29 +538,29 @@ wait:
   {
     //UNROLL LOOP X4 TO INCREASE CHACE OF CATCHING FAST PULSES
     //We directly read from the pin to determine if it is idle, that lets us catch the 
-    if (!(digitalRead(sensepin)== BUS_IDLE_STATE))
+    if (!(digitalRead(sensepin)== WBTV_BUS_IDLE_STATE))
     {
       goto wait;
     }
     //We directly read from the pin to determine if it is idle, that lets us catch the 
-    if (!(digitalRead(sensepin)== BUS_IDLE_STATE))
+    if (!(digitalRead(sensepin)== WBTV_BUS_IDLE_STATE))
     {
       goto wait;
     }
     //We directly read from the pin to determine if it is idle, that lets us catch the 
-    if (!(digitalRead(sensepin)== BUS_IDLE_STATE))
+    if (!(digitalRead(sensepin)== WBTV_BUS_IDLE_STATE))
     {
       goto wait;
     }
     //We directly read from the pin to determine if it is idle, that lets us catch the 
-    if (!(digitalRead(sensepin)== BUS_IDLE_STATE))
+    if (!(digitalRead(sensepin)== WBTV_BUS_IDLE_STATE))
     {
       goto wait;
     }
   }
 }
 
-#ifdef ADV_MODE
+#ifdef WBTV_ADV_MODE
 unsigned char WBTVNode::internalProcessMessage()
 {
     unsigned long error_temp;
@@ -666,6 +666,7 @@ unsigned char WBTVNode::internalProcessMessage()
 }
 return(0);
 }
+
 void WBTVNode::sendTime()
 {
     unsigned char i;
@@ -706,7 +707,7 @@ void WBTVNode::sendTime()
        {
         goto start;
        }
-       #ifdef HASH_STX
+       #ifdef WBTV_HASH_STX
        updateHash('~');
        #endif
        

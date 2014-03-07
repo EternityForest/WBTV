@@ -1,9 +1,9 @@
 #ifndef _WBTVNode
 #define _WBTVNode
 #include <Arduino.h>
-#include "protocol_definitions.h"
+#include "utility/protocol_definitions.h"
 #include "HardwareSerial.h"
-#include "WBTVRand.h"
+#include "utility/WBTVRand.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -43,10 +43,10 @@ public:
   
   unsigned int MIN_BACKOFF = 1100;
   unsigned int MAX_BACKOFF = 1200;
-  #ifdef ADV_MODE
+  #ifdef WBTV_ADV_MODE
   void sendTime();
   #endif
-#ifdef RECORD_TIME
+#ifdef WBTV_RECORD_TIME
   unsigned long message_start_time;
   unsigned long lastServiced;
   unsigned int message_time_error;
@@ -66,7 +66,7 @@ private:
   unsigned char garbage = 0;
 
   //Buffer for the message
-  unsigned char message[MAX_MESSAGE];
+  unsigned char message[WBTV_MAX_MESSAGE];
 
   unsigned char sensepin;
   unsigned char wiredor;
@@ -105,7 +105,7 @@ struct WBTV_Time_t
     unsigned int fraction;
 };
 
-#ifdef ADV_MODE
+#ifdef WBTV_ADV_MODE
 struct WBTV_Time_t WBTVClock_get_time();
 void WBTVClock_set(WBTVNode);
 extern unsigned long WBTVClock_error;

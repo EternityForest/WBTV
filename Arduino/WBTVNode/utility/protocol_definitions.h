@@ -1,29 +1,33 @@
 //The state of the bus when nothing is being sent.
-#define BUS_IDLE_STATE 1
+#define WBTV_BUS_IDLE_STATE 1
 
 //The maximum time to wait and snoop bus before transmitting. must be at least one char time
-#define MAX_WAIT 5
+#define WBTV_MAX_WAIT 5
 
 //How much space to resserve for the message buffer
-#define MAX_MESSAGE 64
+#define WBTV_MAX_MESSAGE 64
 
 //Protocol symbol constants for STart of Header, STart of Text,
 //End of Transmission, and ESCape.
-#define STH '!'
-#define STX '~'
-#define EOT '\n'
-#define ESC '\\'
+#define WBTV_STH '!'
+#define WBTV_STX '~'
+#define WBTV_EOT '\n'
+#define WBTV_ESC '\\'
 
-
-#define HASH_STX
+#define WBTV_HASH_STX
 
 //Comment this to disable recording the packet arrival times.
-#define RECORD_TIME
+#define WBTV_RECORD_TIME
 
 //Comment this to disable automatic handling of certain messages.
 //If left enabled, TIME broadcasts will be handled automatically for you,
 //And millisecond level time access functions will be provided.
-#define ADV_MODE
+#define WBTV_ADV_MODE
+
+//Increased noise resistance at the cost of one extra character before the actual message.
+//Full compatible with nodes not using this feature.
+//Disable this for very slightl more speed.
+#define WBTV_DUMMY_STH
 
 //Continually seed arduino's internal RNG with data from the
 //Exact contents and arrival times of packets. This is very fast because
@@ -43,3 +47,14 @@
 //Also, if this is enabled and WBTV_SEED_ARDUINO_RNG is disables, WBTV won't touch the arduino's built in RNG at all.
 //As a matter of fact, you probably shouldn't either, because the WBTV version is much faster and self seeding.
 #define WBTV_ENABLE_RNG
+
+//Entropy Pool RNG Selector(uncomment one of these)
+//None of these will actuall affect the interface or API, the only change the internal entropy pool
+
+//32 bit 2,7,7 modified marsaglia xorshift
+//4 bytes static ram usage, 2**32-1 period, reasonable quality, tested, fastest RNG available.
+#define WBTV_USE_XORSHIFT32
+
+//8 Bytes, 2**64 period, untested. I'm not actually sure what advantage this would have over
+//The 32 bit version.
+//#define WBTV_USE_XORSHIFT64
