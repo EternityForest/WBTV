@@ -239,3 +239,26 @@ This stuff might go through API changes, not work, or dissapear entirely later.
 #### WBTV_true_rand()
 This function is available on 32u4, 168, 328, and certain MSP430 boards with energia.
 It will read the temperature sensor a few hundred times to add about 1 byte of entropy to the entropy pool.
+
+##Python Library
+
+The python library really just consists of one file, wbtv.py. Copy it where you need it and import it.
+Note that USB-to-serial was not designed for the ultra fast timing the arbitration requires. This library
+can only listen in on networks, and interface with WBTV point to point(full duplex) devices because of this.
+
+A sketch is included in the arduino examples directory that acts as a repeater, bridging between a wired-OR bus and a PC serial port, but it only runs on devices with two or more hardware interfaces like the Leonardo.
+
+The wbtv module has the following:
+
+###wbtv.Node(port,rate)
+
+Class representing one serial interface.
+
+###Node.poll()
+Read the port, polling for new messages. Returns all new messages as a list of tuples, where the first element is a bytearray of the channel and the second element is a bytearray of the message.
+
+###Node.send(channel, data)
+Send a message to channel containing data. strings, bytes, and bytearrays are acceptable.
+
+###Node.sendTime(accuracy)
+Send a TIME broadcast. Accuracy is the accuracy to advertise, in maximum seconds of error.
