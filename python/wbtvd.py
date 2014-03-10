@@ -114,10 +114,7 @@ try:
             
         if time.time() > (lastsenttime+(args.sync)):
             #Every 5 minutes, send the current time using the 64+32 format.
-            n.s.flush()
-            #Add half a millisecond to compensate for the average USB response delay
-            t=time.time() + 0.0005
-            n.send("TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , 1, 135  )  )
+            n.sendTIME(5*60)
             lastsenttime = time.time()
             
         #Use the database as a context manager.

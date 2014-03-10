@@ -1,4 +1,4 @@
-import serial,time,base64
+import serial,time,base64,math,struct
 class Node():
     "Class representing one node that can send and listen for messages"
     def __init__(self, port,speed):
@@ -12,7 +12,17 @@ class Node():
             self.messages.append((x,y))
 
         self.parser = Parser(f)
-
+        
+    def sendTime(self, accuracy):
+            x = accuracy/ 255.0
+            x = int(math.log(x,2)+0.51)
+            y = accuracy/2**x
+            self.s.flush()
+            #Add half a millisecond to compensate for the average USB response delay
+            #Add ten microseconds to compensate for other delays that probably exist.
+            t=time.time() + 0.00051
+            self.send("TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , x, y  ))
+    
     def poll(self):
         """
             Process all new bytes that have been recieved since the last time this was called, and return all new messages as
@@ -67,7 +77,7 @@ class Hash():
 
     def value(self):
         """Return the has state as a byte array"""
-        return bytes([self.slow%256,self.fast%256])
+        return bytearray([self.slow%256,self.fast%256])
 
 class Parser():
     def __init__(self,callback):
@@ -86,6 +96,7 @@ class Parser():
             
     def parseByte(self,byte):
         #If the last byte was an escaped escape put this byte literally in, unset the flag and return
+        byte = ord(byte)
         if self.escape:
             self.escape = False
             self._insbuf(byte)
@@ -104,14 +115,14 @@ class Parser():
         if byte == ord("\n"):
             h = Hash()
             #Hash the message, divider, and the checksum at the end of the message
-            h.update(bytes(self.header))
+            h.update(self.header)
             h.update(ord("~"))
-            h.update(bytes(self.message[:-2]))
+            h.update(bytearray(self.message[:-2]))
 
             #Compare our hash with the message checksum
             if self.message[-2:]==h.value():
                 #Call the callback and delegate processing our new message to it.
-                self.callback(bytes(self.header), bytes(self.message[:-2]))
+                self.callback(bytearray(self.header), bytearray(self.message[:-2]))
             else:
                 #Create a message that tells the callback there was an error, if it is interested.
                 self.callback(b'CONV',b"CSERR"+self.header)
@@ -129,34 +140,29 @@ class Parser():
 
 def makeMessage(header,message):
     h = Hash()
-    try:
-        header= header.encode("utf8")
-    except:
-         pass
-    try:
-        message= message.encode("utf8")
-    except:
-         pass
+    header = bytearray(header)
+    message = bytearray(message)
 
     #every message  starts with a bang    
     data = bytearray(b'!')
     
     #Add all the bytes of the header, and hash them, but prepend escapes as needed.
-    for i in bytes(header):
-        if i in ["\n","~","."]:
-            data .append('\\')
+    for i in header:
+        if i in [ord("\n"),ord("~"),ord("\\")]:
+            data.append(ord('\\'))
             data.append(i)
         else:
             data.append( i)
         h.update(i)
 
     #Add the separator between message and data.
-    data += b'~'
+    data.append( ord('~'))
     h.update(ord('~'))
+    
     #Same as we did for the header
-    for i in bytes(message):
-        if i in ["!","~","."]:
-            data.append('\\' )
+    for i in message:
+        if i in [ord("!"),ord("~"),ord("\\")]:
+            data.append(ord('\\'))
             data.append(i)
         else:
             data.append(i)
@@ -166,5 +172,5 @@ def makeMessage(header,message):
     data.append(h.value()[0])
     data.append(h.value()[1])
     #And the newline which marks the end
-    data += b'\n'
+    data.append(ord('\n'))
     return data
