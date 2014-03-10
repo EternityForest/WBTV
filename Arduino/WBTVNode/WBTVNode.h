@@ -113,6 +113,7 @@ extern unsigned int WBTVClock_error_per_second;
 #define WBTV_CLOCK_UNSYNCHRONIZED 4294967295
 #define WBTV_CLOCK_HIGH_ERROR 4294967294
 #define WBTVClock_invalidate() WBTVClock_error_per_second = 4294967294
+
 #endif
 
 /**Read one of whatever data type from the pointer you give it, then increment

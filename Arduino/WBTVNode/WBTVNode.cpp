@@ -357,7 +357,7 @@ void WBTVNode::decodeChar(unsigned char chr)
           updateHash((message[i]));
         }
 
-#ifdef HASH_WBTV_STX
+#ifdef WBTV_HASH_STX
         else
         {
           updateHash('~');

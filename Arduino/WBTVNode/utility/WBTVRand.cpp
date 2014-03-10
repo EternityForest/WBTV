@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "utility/WBTVRand.h"
 #include "WBTVNode.h"
+
 #ifdef WBTV_USE_XORSHIFT32
 static uint32_t y;
 void WBTV_doRand()
@@ -17,7 +18,6 @@ void WBTV_doRand(uint32_t seed)
 
 #ifdef WBTV_USE_XORSHIFT64
 static uint64_t y=88172645463325252LL;
-
 void WBTV_doRand()
 {
     y^=micros();
@@ -79,10 +79,21 @@ unsigned char WBTV_rand(unsigned char max)
     return((uint32_t)y%(max+1));
 }
 
+float WBTV_rand_float()
+{
+    WBTV_doRand();
+    return((float)4294967295/y);
+
+}
+
 unsigned char WBTV_urand_byte()
 {
     WBTV_doRand();
-    return(((uint32_t)y & 255));
+    //Add together bytes 0 and 2 to produce our final output byte.
+    //No, I do not know why this improves statistical performance.
+    //I heard stories of people multiplying the output by a constant.
+    //That was too slow IMHO so I XORed two bytes together and it works.
+    return(((uint32_t)y>>16)+(uint32_t)y);
 }
 
 
