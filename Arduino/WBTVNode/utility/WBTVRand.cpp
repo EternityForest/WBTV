@@ -6,12 +6,12 @@
 static uint32_t y;
 void WBTV_doRand()
 {
-    y^=micros();
+    y+=micros();
     y^=y<<2;y^=y>>7;y^=y<<7;
 }
 void WBTV_doRand(uint32_t seed)
 {
-    y^=micros()+seed;
+    y+=micros()+seed;
     y^=y<<2;y^=y>>7;y^=y<<7;
 }
 #endif
@@ -20,13 +20,13 @@ void WBTV_doRand(uint32_t seed)
 static uint64_t y=88172645463325252LL;
 void WBTV_doRand()
 {
-    y^=micros();
+    y+=micros();
     y^=(y<<1); y^=(y>>7); y^=(y<<44);
 }
 
 void WBTV_doRand(uint32_t seed)
 {
-    y^=micros()+seed;
+    y+=micros()+seed;
     y^=(y<<1); y^=(y>>7); y^=(y<<44);
 }
 #endif
