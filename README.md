@@ -217,6 +217,14 @@ Set the binary callback. f takes (unsigned char * channel, unsigned char channel
 
 Note there may only be one callback at a time. string and binary callbacks both delete whatever callback was already there.
 
+####WBTVNode.MIN_BACKOFF and MAX_BACKOFF
+The minimum and maximum times to wait before sending a message in microseconds.
+MIN_BACKOFF needs to be at least 1 byte-time at whatever baud rate you run at.
+MAX_BACKOFF should be at least few dozen microseconds larger than MIN_BACKOFF for arbitration to function properly.
+
+These default to 1100 and 1200, for operation at 9600 baud.
+If your baud rate is higher you should change these or sending a message might get interuptd a lot and take a long time.
+
 ####Useful Macros
 
 ####read_interpret(unsigned char*, type)
