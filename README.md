@@ -92,7 +92,9 @@ Every time you request a random number, the exact micros() value of the request 
 
 The entropy pool is global, as are all functions associated with it, and is shared by all interfaces.
 
-Note once again that the marsaglia XORShift generators are NOT cryptographically secure in any way, and that WBTV by default only uses 32 bits of PRNG state.
+Note once again that the marsaglia XORShift generators are NOT cryptographically secure in any way, and that WBTV by default only uses 32 bits of PRNG state. The period of an XORShift-32 genrator is normall 2^32. However because we mix in the current micros() value with every single request, there really isn't a period that can be calculated easily and even if there was, it would change from sketch to sketch.
+
+In the file utility/protocol_definitions you can change the internal RNG to a 64 bit, or some other options.
 
 ####WBTV_rand(unsigned long max)
 Return a random number from the WBTV internal entropy pool from 0 to max inclusive.
