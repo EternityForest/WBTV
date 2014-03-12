@@ -100,11 +100,18 @@ Note once again that the marsaglia XORShift generators are NOT cryptographically
 
 In the file utility/protocol_definitions you can change the internal RNG to a 64 bit, or some other options.
 
-####WBTV_rand(unsigned long max)
+####WBTV_rand(max)
 Return a random number from the WBTV internal entropy pool from 0 to max inclusive.
+If max is a floating point value, the result will be a float. Otherwise the result will be an integer or a long.
+Due to bias issues 64 bit numbers are not currentl supported but will be in the future.
 
-####WBTV_rand(long max, long min)
-Return a random integer between min and max inclusive.
+####WBTV_rand(max,min)
+Return a random number between min and max inclusive. If either one is a float, the result will be a long.
+Otherwise the result will be of the smallest type that can hold the number you input.
+Due to bias issues 64 bit numbers are not currentl supported but will be in the future.
+
+####WBTV_rand_float()
+Return a random floating point number from 0 to 1
 
 ####WBTV_doRand([long seed])
 Mix the current micros() value into the entropy pool. You can call this when something that happens with

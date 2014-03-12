@@ -79,12 +79,109 @@ unsigned char WBTV_rand(unsigned char max)
     return((uint32_t)y%(max+1));
 }
 
+int WBTV_rand(int max)
+{
+    WBTV_doRand();
+    return((y&0xFFFF)%(max+1));
+}
+
+long WBTV_rand(long max)
+{
+    WBTV_doRand();
+    return((y&0xFFFF)%(max+1));
+}
+
+float WBTV_rand(float max)
+{
+    WBTV_doRand();
+    return((max/4294967295u)*y);
+}
+
+float WBTV_rand(double max)
+{
+    WBTV_doRand();
+    return((max/4294967295u)*y);
+}
+
+float WBTV_rand(float min,float max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(double min,double max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(long min,float max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(float min,long max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(int min,float max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(float min,int max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(int min,double max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(double min,int max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(long min,double max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(double min,long max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(unsigned char min,float max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
+float WBTV_rand(float min,unsigned char max)
+{
+    WBTV_doRand();
+    return((((max-min)/4294967295u)*y)+min);
+}
+
 float WBTV_rand_float()
 {
     WBTV_doRand();
-    return((float)4294967295/y);
+    return(y/(float)4294967295u);
 
 }
+
 
 unsigned char WBTV_urand_byte()
 {
@@ -133,6 +230,7 @@ unsigned char oldADCSRB = ADCSRB;
 
   //Leave things like we found them
   ADMUX = oldADMUX;
+  ADCSRA=oldADCSRA;
   ADCSRB = oldADCSRB;
   
 
@@ -160,7 +258,7 @@ unsigned char oldADMUX = ADMUX;
   
   //Leave things like we found them
   ADMUX = oldADMUX;
-  
+  ADCSRA=oldADCSRA;
   return(wADC);
 #endif
 }
