@@ -4,6 +4,10 @@ WBTV
 pseudo-pubsub for embedded devices using wired-OR. Under heavy development, may or may not work at any given
 moment. API may change. Protocl may change. Should be finalized within a few weeks.
 
+##Protocol Spec Documents
+The "official" version is WBTV_specification.odt. All other versions are generated from this file.
+Files in "development" represent possible future versions and as such have no bearing on the actual protocol spcification.
+
 ##Protocol Summary
 
 The protocol works over wired-OR busses, such as a single wire pulled to 5V and driven with open collector outputs, or CAN bus hardware.
