@@ -19,9 +19,10 @@ class Node():
             y = accuracy/2**x
             self.s.flush()
             #Add half a millisecond to compensate for the average USB response delay
-            #Add ten microseconds to compensate for other delays that probably exist.
-            t=time.time() + 0.00051
+            #Add 50 microseconds to compensate for other delays that probably exist.
+            t=time.time() + 0.00055
             self.send("TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , x, y  ))
+            self.s.flush()
     
     def poll(self):
         """
@@ -55,6 +56,7 @@ class Node():
         x = makeMessage(header,message)
         self.totalTraffic += len(x)
         self.s.write(x)
+        self.s.flush()
 
 class Hash():
     #This class implements the modulo 256 variant of the fletcher checksum
