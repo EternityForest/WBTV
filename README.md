@@ -74,9 +74,8 @@ To use with a simple point-to-point connection, connect the RX of the first boar
             //Do something with the message you just got here.
             //The message and data will be two null terminated strings.
         }
-###Arduino lib API(Incomplete documentation)
-
-####Creating WBTV Objects
+        
+###Creating WBTV Objects
 The library supports multiple interfaces, each associated with a stream.
 
 ####WBTVNode(stream *)
@@ -129,7 +128,7 @@ MAX_BACKOFF should be at least few dozen microseconds larger than MIN_BACKOFF fo
 These default to 1100 and 1200, for operation at 9600 baud.
 If your baud rate is higher you should change these or sending a message might get interuptd a lot and take a long time.
 
-####The Built in Entropy Pool
+###The Built in Entropy Pool
 WBTVNode maintains an internal 32-bit modified XORshift RNG which may be faster than the RNG functions on your platform.
 Whenever a new packet arrives, the packet arrival time, and the checksum of the packet is mixed into the state.
 Every time you request a random number, the exact micros() value of the request is mixed in. Therefore the random numbers depends on the complete history of arriving messages, and the exact time at which you request the number(which is affected by the entire history of program execution, interrupts, etc), making them likely suitable for anything except cryptographic purposes.
@@ -167,7 +166,7 @@ Returns a raw 32 bit random value straight from the LFSR.
 ####WBTV_urand_byte()
 Return a single random byte.
 
-####The WBTV Internal Clock
+###The WBTV Internal Clock
 WBTV Maintains an estimate of the current UTC time of day by keeping track of TIME messages. TIME messages are not passed
 to user callbacks as the decoding of them is fairly complex.
 
@@ -249,7 +248,7 @@ Macro for 4294967295, which means the clock has never been synchronized.
 ####WBTV_CLOCK_HIGH_ERROR
 Macro for 4294967294, meaning the error is too high to count(Greater than 20 minutes or so)
 
-####Useful Macros
+###Useful Macros
 
 ####read_interpret(unsigned char*, type)
 This is a macro you may find useful when parsing the contents of a message.
