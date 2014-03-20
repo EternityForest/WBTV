@@ -88,6 +88,46 @@ channel and doesn't do any of the wired-OR or CSMA/CD stuff.
 Creates a WBTV node for accessing a bus. The pin number must be the RX pin.
 This pin is used for collision avoidance and detection.
 
+####WBTV Core Functions
+These are the functions dealing with sending and recieving messages.
+
+####WBTVNode.service()
+Tell the node to check the serial buffer, process up to one character,
+and when a complete message is recieved, either pass it off to the registered callback
+or, if it is a TIME message, use it to set the internal clock.
+This will block either only for microseconds while processing one byte,
+or for as long as the callback takes when processing a full message. 
+
+####WBTVNode.sendMessage(byte * channel, byte channellen, byte * data, byte datalen)
+Send a message that my contain NULs by supplying a channel and a length.
+Note that this is a blocking function when used with wired-OR busses,
+and the time cannot be predicted without knowing the full list of devices on the bus.
+Heavily loaded networks may block for a long time, and if the termination resistor fails and nothing pulls the bus up,
+this function may block indefinately.These drawbacks are considered acceptable in the low risk/non critical, low speed, consumer type applications WBTV was intended for.
+
+This function, when used with WBTV over point to point(full duplex) links, should not block for any longer than one would expect a similar Serial.print statement to block for. 
+
+####WBTVNode.stringSendMessage(char * channel, char * data)
+Same as sendMessage, but uses null terminated strings instead of pointer-length pairs. Blocks(or doesn't block) in the same way as the binary version.
+
+
+####WBTVNode.setStringCallback(f)
+Set the callback to handle new messages.
+f is a function pointer to a function taking two char *'s , the channel and the data. If you use a string callback, any message with a NUL byte in the channel name will simply be dropped and ignored. Messages with NULs in the actuall data may still get through and appear truncated to any function depending on the null terminator. 
+
+####WBTVNode.setBinaryCallback(f)
+Set the binary callback. f takes (unsigned char * channel, unsigned char channellen, unsigned char* data, unsigned char datalen)
+
+Note there may only be one callback at a time. string and binary callbacks both delete whatever callback was already there.
+Messages on channel TIME will not be passed to any callbacks as these are handled automatically by the internal clock, and properly interpreting a TIME message is handled by an 80+ line function.
+
+####WBTVNode.MIN_BACKOFF and MAX_BACKOFF
+The minimum and maximum times to wait before sending a message in microseconds.
+MIN_BACKOFF needs to be at least 1 byte-time at whatever baud rate you run at, and should be 1.1 to 1.2 byte times.
+MAX_BACKOFF should be at least few dozen microseconds larger than MIN_BACKOFF for arbitration to function properly.
+
+These default to 1100 and 1200, for operation at 9600 baud.
+If your baud rate is higher you should change these or sending a message might get interuptd a lot and take a long time.
 
 ####The Built in Entropy Pool
 WBTVNode maintains an internal 32-bit modified XORshift RNG which may be faster than the RNG functions on your platform.
@@ -139,8 +179,21 @@ The WBTV Clock, like the entropy pooling, is global and shared by all interfaces
 
 ####WBTVClock_get_time()
 
-Returns a struct called a WBTV_Time_t with two fields, one is a 64 bit unix timestamp, the other a
-32 bit unsigned binary fraction part of the current time.
+Returns a struct called a WBTV_Time_t, containing the current time of WBTV's internal clock.
+Because of millis() rollover, this function should be called at least every 50 days or so if the clock is to keep
+accurate time.
+
+The definition of the WBTV_Time_t is as follows:
+
+    struct WBTV_Time_t
+    {
+        long long seconds;
+        unsigned int fraction;
+    };
+    
+Where seconds is a UNIX timestamp, and fraction is a binary fraction that represents the fractional part
+of the time as in 2**16ths of a second. Note that the actual resolution is only one millisecond.
+
 The WBTV clock is automatically set by incoming TIME messages, and can be manally set.
 
 ####WBTVNode.sendTime()
@@ -195,46 +248,6 @@ Macro for 4294967295, which means the clock has never been synchronized.
 
 ####WBTV_CLOCK_HIGH_ERROR
 Macro for 4294967294, meaning the error is too high to count(Greater than 20 minutes or so)
-
-####WBTV Core Functions
-These are the functions dealing with sending and recieving messages.
-
-####WBTVNode.service()
-Tell the node to check the serial buffer, process up to one character,
-and when a complete message is recieved, either pass it off to the registered callback
-or, if it is a TIME message, use it to set the internal clock.
-This will block either only for microseconds while processing one byte,
-or for as long as the callback takes when processing a full message. 
-
-####WBTVNode.sendMessage(byte * channel, byte channellen, byte * data, byte datalen)
-Send a message that my contain NULs by supplying a channel and a length.
-Note that this is a blocking function when used with wired-OR busses,
-and the time cannot be predicted without knowing the full list of devices on the bus.
-Heavily loaded networks may block for a long time, and if the termination resistor fails and nothing pulls the bus up,
-this function may block indefinately.These drawbacks are considered acceptable in the low risk/non critical, low speed, consumer type applications WBTV was intended for.
-
-This function, when used with WBTV over point to point(full duplex) links, should not block for any longer than one would expect a similar Serial.print statement to block for. 
-
-####WBTVNode.stringSendMessage(char * channel, char * data)
-Same as sendMessage, but uses null terminated strings instead of pointer-length pairs. Blocks(or doesn't block) in the same way as the binary version.
-
-
-####WBTVNode.setStringCallback(f)
-Set the callback to handle new messages.
-f is a function pointer to a function taking two char *'s , the channel and the data. If you use a string callback, any message with a NUL byte in the channel name will simply be dropped and ignored. Messages with NULs in the actuall data may still get through and appear truncated to any function depending on the null terminator. 
-
-####WBTVNode.setBinaryCallback(f)
-Set the binary callback. f takes (unsigned char * channel, unsigned char channellen, unsigned char* data, unsigned char datalen)
-
-Note there may only be one callback at a time. string and binary callbacks both delete whatever callback was already there.
-
-####WBTVNode.MIN_BACKOFF and MAX_BACKOFF
-The minimum and maximum times to wait before sending a message in microseconds.
-MIN_BACKOFF needs to be at least 1 byte-time at whatever baud rate you run at.
-MAX_BACKOFF should be at least few dozen microseconds larger than MIN_BACKOFF for arbitration to function properly.
-
-These default to 1100 and 1200, for operation at 9600 baud.
-If your baud rate is higher you should change these or sending a message might get interuptd a lot and take a long time.
 
 ####Useful Macros
 
