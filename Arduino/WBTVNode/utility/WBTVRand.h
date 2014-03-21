@@ -28,6 +28,17 @@ float WBTV_rand(double min,long max);
 float WBTV_rand(unsigned char min,float max);
 float WBTV_rand(float min,unsigned char max);
 float WBTV_rand_float();
-void WBTV_true_rand();
+
+#ifdef  __AVR_ATmega32U4__
+#define WBTV_HW_ENTROPY
+#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) || defined(__MSP430G2231__) 
+#define WBTV_HW_ENTROPY
+#elif defined( __AVR_ATmega328P__) || defined( __AVR_ATmega168P__) || defined( __AVR_ATmega328__) || defined( __AVR_ATmega168__)
+#define WBTV_HW_ENTROPY
+#endif
+
+#ifdef WBTV_HW_ENTROPY
+void WBTV_get_entropy();
+#endif
 
 #endif

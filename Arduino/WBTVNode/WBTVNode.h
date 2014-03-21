@@ -1,14 +1,19 @@
 #ifndef _WBTVNode
 #define _WBTVNode
-#include <Arduino.h>
+#include <Stream.h>
 #include "utility/protocol_definitions.h"
 #include "HardwareSerial.h"
 #include "utility/WBTVRand.h"
+#include "utility/WBTVClock.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <avr/io.h>
 
+#if defined(ENERGIA) 
+#include <Energia.h>
+#else
+#include <Arduino.h>
+#endif
 /*
 This class represents one WBTV node. You must pass it: the adress of a Stream object(like a serial port),
  the pin that is connected to the bus(for arduino and msp430 should be the same as te RX pin in question,
@@ -41,8 +46,8 @@ public:
    char *, 
    char *));
   
-  unsigned int MIN_BACKOFF = 1100;
-  unsigned int MAX_BACKOFF = 1200;
+  unsigned int MIN_BACKOFF;
+  unsigned int MAX_BACKOFF;
   #ifdef WBTV_ADV_MODE
   void sendTime();
   #endif
@@ -54,16 +59,16 @@ public:
 #endif
 private:   
   //Pointer to the place to put the new char
-  unsigned char recievePointer = 0;
+  unsigned char recievePointer;
   //Place to keep track of where the header stops and data begins
   unsigned char headerTerminatorPosition;
   //Used for the fletcher checksum
-  unsigned char sumSlow,sumFast =0;
+  unsigned char sumSlow,sumFast;
   //If the last char recieved was an unesaped escape, this is true
-  unsigned char escape = 0;
+  unsigned char escape;
 
   //If this frame is garbage, true(like if it is too long)
-  unsigned char garbage = 0;
+  unsigned char garbage;
 
   //Buffer for the message
   unsigned char message[WBTV_MAX_MESSAGE];
@@ -88,6 +93,7 @@ private:
   unsigned char writeWrapper(unsigned char chr);
   unsigned char escapedWrite(unsigned char chr);
   void waitTillICanSend();
+  void inline handle_end_of_message();
 
   void dummyCallback(
   unsigned char * header, 
@@ -99,22 +105,7 @@ private:
 
 };
 
-struct WBTV_Time_t
-{
-    long long seconds;
-    unsigned int fraction;
-};
 
-#ifdef WBTV_ADV_MODE
-struct WBTV_Time_t WBTVClock_get_time();
-void WBTVClock_set(WBTVNode);
-extern unsigned long WBTVClock_error;
-extern unsigned int WBTVClock_error_per_second;
-#define WBTV_CLOCK_UNSYNCHRONIZED 4294967295
-#define WBTV_CLOCK_HIGH_ERROR 4294967294
-#define WBTVClock_invalidate() WBTVClock_error_per_second = 4294967294
-
-#endif
 
 /**Read one of whatever data type from the pointer you give it, then increment
  *the pointer by the size of the data type.

@@ -21,7 +21,7 @@ class Node():
             #Add half a millisecond to compensate for the average USB response delay
             #Add 50 microseconds to compensate for other delays that probably exist.
             t=time.time() + 0.00055
-            self.send("TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , x, y  ))
+            self.send(b"TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , int(x), int(y)  ))
             self.s.flush()
     
     def poll(self):
@@ -97,8 +97,12 @@ class Parser():
             self.message.append(byte)
             
     def parseByte(self,byte):
+        if isinstance(byte,int):
+            pass
+        else:
+            byte = ord(byte)
+
         #If the last byte was an escaped escape put this byte literally in, unset the flag and return
-        byte = ord(byte)
         if self.escape:
             self.escape = False
             self._insbuf(byte)

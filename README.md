@@ -87,7 +87,7 @@ channel and doesn't do any of the wired-OR or CSMA/CD stuff.
 Creates a WBTV node for accessing a bus. The pin number must be the RX pin.
 This pin is used for collision avoidance and detection.
 
-####WBTV Core Functions
+###WBTV Core Functions
 These are the functions dealing with sending and recieving messages.
 
 ####WBTVNode.service()
@@ -165,6 +165,14 @@ Returns a raw 32 bit random value straight from the LFSR.
 
 ####WBTV_urand_byte()
 Return a single random byte.
+
+#### WBTV_get_entropy()
+This function is available on 32u4, 168, 328, and certain MSP430 boards with energia.
+It will read the temperature sensor a few hundred times to add about 32 bits of entropy to the entropy pool.
+This function may block for half a second to 10 seconds or more, but should thouroughly randomize the pool.
+
+#### WBTV_HW_ENTROPY
+This macro is defined if WBTV_get_entropy is available on your board.
 
 ###The WBTV Internal Clock
 WBTV Maintains an estimate of the current UTC time of day by keeping track of TIME messages. TIME messages are not passed
@@ -269,9 +277,6 @@ This lets you treat a pointer as a stream of various different types.
 
 This stuff might go through API changes, not work, or dissapear entirely later.
 
-#### WBTV_true_rand()
-This function is available on 32u4, 168, 328, and certain MSP430 boards with energia.
-It will read the temperature sensor a few hundred times to add about 1 byte of entropy to the entropy pool.
 
 ##Python Library
 

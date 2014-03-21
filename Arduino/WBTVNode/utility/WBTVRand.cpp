@@ -2,7 +2,39 @@
 #include "utility/WBTVRand.h"
 #include "WBTVNode.h"
 
+/*This file generates very high quality random numbers quickly via an XORSHIFT rng,
+ *combined with the micros() value.
+ *
+ *For most practical purposes, you should be able to just call any RNG function without worrying about it.
+ *If there is any user input, analog reads, or any other connection to the outside world,
+ *micros() will likely have enough entropy to seed the generator.
+ *
+ *However, if you need to do something like make a UUID,
+ *call WBTV_get_entropy() to add 32 bits of entropy to the pool.
+ *
+ *The effective amount of entropy in the pool is greater than 32, because it depends on millis(),
+ *which depends on the entire program state.
+ *
+ *If there is any WBTV network traffic at all going on, the arrival times and checksums will be
+ *an additional source of entropy, just like a real OS entropy gathering system.
+ *
+ *I do not have a degree in cryptography. I'm not even an amateur cryptologist.
+ *I really just tried random stuff until it passed ent, rngtest, and dieharder.
+ *I probably have no clue what I'm talking about.
+ *But the performance is good and it appears like it passes the statistical tests, reliably.
+ */
+
+
+
 #ifdef WBTV_USE_XORSHIFT32
+/**This is a modified version of marsaglia's RNG.
+ *The constants 2,2,7 are chosen for efficiency even though
+ *other sets of numbers may have better statistical properties.
+ *This is because when we add in micros(), it improves the propereties greatly.
+ *
+ *A PC based simulation of this technique, with the assumption that micros()
+ *increments by a constant in the thousands every call, passed every single diehard test.
+ */
 static uint32_t y;
 void WBTV_doRand()
 {
@@ -82,13 +114,13 @@ unsigned char WBTV_rand(unsigned char max)
 int WBTV_rand(int max)
 {
     WBTV_doRand();
-    return((y&0xFFFF)%(max+1));
+    return(y%(max+1));
 }
 
 long WBTV_rand(long max)
 {
     WBTV_doRand();
-    return((y&0xFFFF)%(max+1));
+    return(y%(max+1));
 }
 
 float WBTV_rand(float max)
@@ -189,7 +221,9 @@ unsigned char WBTV_urand_byte()
     //Add together bytes 0 and 2 to produce our final output byte.
     //No, I do not know why this improves statistical performance.
     //I heard stories of people multiplying the output by a constant.
-    //That was too slow IMHO so I XORed two bytes together and it works.
+    //That was too slow IMHO so I added two bytes together and it works.
+    
+    //The choice of what two bytes to add was entirely arbitrary.
     return(((uint32_t)y>>16)+(uint32_t)y);
 }
 
@@ -235,7 +269,8 @@ unsigned char oldADCSRB = ADCSRB;
   
 
   return ADC;
-#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) || defined(__MSP430G2231__) 
+#elif defined(__MSP430G2452__) || defined(__MSP430G2553__) || defined(__MSP430G2231__)
+//Would't it be nice if Arduino made the temp sensor as easy as Energia does?
   return analogRead(TEMPSENSOR);
 
 #elif defined( __AVR_ATmega328P__) || defined( __AVR_ATmega168P__) || defined( __AVR_ATmega328__) || defined( __AVR_ATmega168__)
@@ -263,13 +298,13 @@ unsigned char oldADMUX = ADMUX;
 #endif
 }
 
-void WBTV_true_rand()
+void WBTV_get_entropy()
 {
     unsigned char last =0;
     unsigned char changes =0;
     unsigned char temp = 0;
     unsigned char sames =0;
-    while((changes<12)|(sames<12))
+    while((changes<32)|(sames<32))
     {
      temp = getTemperature();
      if(!(temp==last))
