@@ -12,6 +12,7 @@ unsigned int WBTV_rand(unsigned int max);
 unsigned char WBTV_rand(unsigned char max);
 unsigned char WBTV_urand_byte();
 int WBTV_rand(int max);
+long WBTV_rand(int min,long max);
 long WBTV_rand(long max);
 float WBTV_rand(float max);
 float WBTV_rand(double max);

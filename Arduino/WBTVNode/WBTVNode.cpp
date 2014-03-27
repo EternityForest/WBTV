@@ -1,7 +1,4 @@
 #include "WBTVNode.h"
-#include "utility/WBTVRand.h"
-
-
 
 /*
  *Instantiate a wired-OR WBTV node with CSMA, collision avoidance,
@@ -69,7 +66,7 @@ void WBTVNode::setStringCallback( void (*thecallback)( char *,  char *))
 
 void WBTVNode::stringSendMessage(const char *channel, const char *data)
 {
-  sendMessage((const unsigned char *)channel,strlen(channel),(const unsigned char *) data,strlen(data));
+sendMessage((const unsigned char *)channel,strlen(channel),(const unsigned char *) data,strlen(data));
 }
 
 
@@ -77,9 +74,9 @@ void WBTVNode::stringSendMessage(const char *channel, const char *data)
 void WBTVNode::sendMessage(const unsigned char * channel, const unsigned char channellen, const unsigned char * data, const unsigned char datalen)
 {
   unsigned char i;
-
   //If at any time an error is found, go back here to retry
 waiting:
+
   //Wait till the bus is free
   if(wiredor)
   {
@@ -136,8 +133,6 @@ waiting:
     }
   }
 
-  //Send the two bytes of the checksum, After doing the proper fletcher derivation.
-  //When the reciever hashses the message along with the checksum,the result should be 0.
   if (!escapedWrite(sumSlow))
 
   {
@@ -153,8 +148,6 @@ waiting:
   {
     goto waiting;
   }
-
-
 }
 
 //Note that one hash engine gets used for sending and recieving. This works for now because we calc the hash all at once after we are
@@ -228,7 +221,8 @@ void WBTVNode::decodeChar(unsigned char chr)
       #endif
       
       #ifdef WBTV_ENABLE_RNG
-      WBTV_doRand(sumSlow+micros());
+      //doRand Automatically uses the current micros() value.
+      WBTV_doRand();
       #endif
 
       return;
@@ -318,7 +312,7 @@ void inline WBTVNode::handle_end_of_message()
       }
 
       //Check the hash
-      if ((message[recievePointer-1]== sumFast) & (message[recievePointer-2]== sumSlow))
+      if ((message[recievePointer-1]== sumFast) && (message[recievePointer-2]== sumSlow))
       {
         #ifdef WBTV_ADV_MODE
         //Check if this is a time() message.
@@ -366,22 +360,22 @@ void inline WBTVNode::handle_end_of_message()
       #endif
       
       #ifdef WBTV_ENABLE_RNG
-      WBTV_doRand(sumSlow+micros());
+      WBTV_doRand(sumSlow);
       #endif
 }
 
 unsigned char WBTVNode::writeWrapper(unsigned char chr)
 {
-  unsigned char x;
   unsigned long start;
   BUS_PORT->read();
   BUS_PORT->write(chr);
+
   if (wiredor)
   {
-    start = millis();
+    start = micros();
     while (!BUS_PORT->available())
     {
-      if ((millis()-start)>WBTV_MAX_WAIT)
+      if ((micros()-start)>WBTV_MAX_WAIT)
       {
         return 0;
       }

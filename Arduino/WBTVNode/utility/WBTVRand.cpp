@@ -33,7 +33,7 @@
  *This is because when we add in micros(), it improves the propereties greatly.
  *
  *A PC based simulation of this technique, with the assumption that micros()
- *increments by a constant in the thousands every call, passed every single diehard test.
+ *increments by a constant in the thousands every call, passed every single diehard test, when adding two bits for th output function.
  */
 static uint32_t y;
 void WBTV_doRand()
@@ -41,6 +41,7 @@ void WBTV_doRand()
     y+=micros();
     y^=y<<2;y^=y>>7;y^=y<<7;
 }
+
 void WBTV_doRand(uint32_t seed)
 {
     y+=micros()+seed;
@@ -50,6 +51,7 @@ void WBTV_doRand(uint32_t seed)
 
 #ifdef WBTV_USE_XORSHIFT64
 static uint64_t y=88172645463325252LL;
+
 void WBTV_doRand()
 {
     y+=micros();
@@ -70,6 +72,12 @@ uint32_t WBTV_rawrand()
 }
 
 unsigned long WBTV_rand(unsigned long min, unsigned long max)
+{
+    WBTV_doRand();
+    return(((uint32_t)y%((max+1)-min))+min);
+}
+
+long WBTV_rand(int min,long max)
 {
     WBTV_doRand();
     return(((uint32_t)y%((max+1)-min))+min);

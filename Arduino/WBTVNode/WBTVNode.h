@@ -14,15 +14,6 @@
 #else
 #include <Arduino.h>
 #endif
-/*
-This class represents one WBTV node. You must pass it: the adress of a Stream object(like a serial port),
- the pin that is connected to the bus(for arduino and msp430 should be the same as te RX pin in question,
- and a callback that gets (channel*,channellen,data*,datalen) when a new message has been recieved.
- 
- call parseByte over each new byte that comes in the port, and call 
- */
-
-
 
 class WBTVNode
 {

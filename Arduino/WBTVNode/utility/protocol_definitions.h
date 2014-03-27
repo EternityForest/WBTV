@@ -1,8 +1,8 @@
 //The state of the bus when nothing is being sent.
 #define WBTV_BUS_IDLE_STATE 1
 
-//The maximum time to wait and snoop bus before transmitting. must be at least one char time
-#define WBTV_MAX_WAIT 5
+//Maximum time to wait on recieving a byte back that we sent.
+#define WBTV_MAX_WAIT 5000
 
 //How much space to resserve for the message buffer
 #define WBTV_MAX_MESSAGE 64

@@ -8,7 +8,7 @@ struct WBTV_Time_t WBTVClock_Sys_Time;
  *4294967295 is reserved for when the time has never been set.
  */
 
-unsigned long WBTVClock_error = 4294967295; // The accumulated error estimator in seconds/2**16
+unsigned long WBTVClock_error = 4294967295ul; // The accumulated error estimator in seconds/2**16
 
 //Assume an error per second of about 5000PPM, which is about 10 minutes in day,
 //Which is approximately what one gets with ceramic resonators.
@@ -60,14 +60,14 @@ temp = millis();
 while(temp - WBTVClock_prevMillis >= 1000){
     WBTVClock_Sys_Time.seconds++;
     WBTVClock_prevMillis += 1000;
-    if (WBTVClock_error<4294900000)
+    if (WBTVClock_error<4294900000ul)
     {
     WBTVClock_error+= WBTVClock_error_per_second;
     }
     else
     {
     //This value reserved for "synchronized but error too high to count
-    WBTVClock_error = 4294967294;
+    WBTVClock_error = 4294967294ul;
     }
   }
   
@@ -97,7 +97,7 @@ unsigned char WBTVNode::internalProcessMessage()
         //So assume the error is too high to count and store the flag value.
         if ((*((signed char*) (message+17) ) ) > 8)
         {
-            error_temp = (4294967294);
+            error_temp = (4294967294ul);
         }
         else
         {
@@ -138,13 +138,13 @@ unsigned char WBTVNode::internalProcessMessage()
                 //would have been processed), and s must have arrived between the last two polling
                 //cycles. This means it could have arrived at any time at all.
                 //So we tack on up to 5 minutes of extra error in that case.
-                if (error_temp <4275306493)
+                if (error_temp <4275306493ul)
                 {
-                   error_temp+= 19660800;
+                   error_temp+= 19660800ul;
                 }
                 else
                 {
-                   error_temp = (4294967294);
+                   error_temp = (4294967294ul);
                 }
                 
             }
@@ -270,7 +270,7 @@ void WBTVNode::sendTime()
     
     //If the error is too high to count, assume that it could be any crazy insane number.
     //Like perhaps older than the earth....
-    if(WBTVClock_error >= 4294967294)
+    if(WBTVClock_error >= 4294967294ul)
     {
       
         if(!escapedWrite(127))
