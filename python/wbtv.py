@@ -24,6 +24,10 @@ class Node():
             self.send(b"TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , int(x), int(y)  ))
             self.s.flush()
     
+    #Send random data on the rand channel.
+    def sendRand(self,num=16):
+        self.send('RAND',os.urandom(num))
+    
     def poll(self):
         """
             Process all new bytes that have been recieved since the last time this was called, and return all new messages as
@@ -180,3 +184,70 @@ def makeMessage(header,message):
     #And the newline which marks the end
     data.append(ord('\n'))
     return data
+
+
+#def internalRecieve(x,y):
+#    if x == "SERV":
+#        owningdev = y[0:16]
+#        service = y[17:32]
+#        clen = y[33]
+#        channel = y[34:34+clen]
+#        modifiers = y[34+clen:]
+#        
+#        if service in self.supportedServices:
+#            self.supportedServices[service](owningdev,channel,modifiers)
+#
+#class BaseService(object):
+#    pass
+#
+#class DummyStruct(object):
+#    def pack(self,data):
+#        return None
+#    
+#
+#class DAQService(BaseService):
+#    def __init__(self, owningdev,channel,modifiers):
+#        fields= modifiers.split("\n")
+#        
+#        self.fields= []
+#        
+#        name_to_struct ={
+#            "int8":"c",
+#            "uint8":"B",
+#            "int16":"h",
+#            "uint16":"H",
+#            "int32":"i",
+#            "uint32":"I"
+#        }
+#        
+#        
+#        for i in fields:
+#            x = i.split(" ")
+#            ftype= x[0]
+#            fname= x[1]
+#            
+#            if "as" in x:
+#                funit = x[x.index['as']+1]
+#            else:
+#                funit = ''
+#                
+#            if ftype in name_to_struct:
+#                fstruct = struct.Struct(name_to_strut[ftype])
+#            else:
+#                raise RuntimeError("Can't decoode service, bad struct field")
+#            self.fields.append((fname,ftype,funit,fstruct))
+#    
+#    def onMessage(self,message):
+#        signals ={}
+#        while message:
+#            signal = message[0]
+#            signlen = self.fields[signal][4].size
+#            signal = message[]
+#            signals = messag
+#    
+#        
+#    
+#    
+#    
+#
+#            

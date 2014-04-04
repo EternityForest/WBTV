@@ -56,23 +56,28 @@ struct WBTV_Time_t WBTVClock_get_time()
 unsigned long temp;
 
 temp = millis();
-
+//This function based in part on the datetime library.
 while(temp - WBTVClock_prevMillis >= 1000){
     WBTVClock_Sys_Time.seconds++;
     WBTVClock_prevMillis += 1000;
+    
+    //if the error gets close to the max we can hold, use the "Error to high to count" flag,
+    //otherwise just increase the error counter.
     if (WBTVClock_error<4294900000ul)
     {
     WBTVClock_error+= WBTVClock_error_per_second;
     }
     else
     {
-    //This value reserved for "synchronized but error too high to count
     WBTVClock_error = 4294967294ul;
     }
   }
   
   //(1000 * 65) + 500 is 2**16 to within a tenth of a percent.
-  //When the milliseconds value is 1000, the output will be low by 63
+  //Therefore (millis*65) + (millis/2) approximates a convrsion from
+  //milliseconds to 2^16ths of a secons
+  
+  //But when the milliseconds value is 1000, the output will be low by 63
   //The average error is therefore 31.5, and is always low.
   
   //Therefore we must add 32, which in the average case will make it more accurate,
@@ -191,6 +196,7 @@ unsigned char WBTVNode::internalProcessMessage()
 return(0);
 }
 
+//Send the current time as estimated in the internal clock
 void WBTVNode::sendTime()
 {
     unsigned char i;
@@ -200,8 +206,12 @@ void WBTVNode::sendTime()
     start:
     sumFast=sumSlow =0;
     waitTillICanSend();
+    
+    //Send the start byte.
     if (writeWrapper('!'))
         {
+            //If we sent the initial start byte sucessful
+            //Get the current time at which the ! was sent
             t = WBTVClock_get_time();
         }
     else
@@ -209,6 +219,8 @@ void WBTVNode::sendTime()
         goto  start;
     }
     
+    //Send and hash each byte of the channel name.
+    //We use writewrapper and not escapedwrite TIME
     if(!writeWrapper('T'))
        {
         goto start;
@@ -226,25 +238,32 @@ void WBTVNode::sendTime()
         goto start;
        }
        updateHash('T');updateHash('I');updateHash('M');updateHash('E');
-
+    
+    //Send the divider
     if(!writeWrapper('~'))
        {
         goto start;
        }
-       #ifdef WBTV_HASH_STX
-       updateHash('~');
-       #endif
-       
+    
+    //If the protocol definition says to include the ~ in the hash, update it.
+    #ifdef WBTV_HASH_STX
+    updateHash('~');
+    #endif
+    
+    
+    //Sent the 64 byte seconds count.
     for (i=0;i<8;i++)
     {
         if(!escapedWrite(((const unsigned char *)(& t.seconds))[i]))
         {
+            //Go back and retry if we get interfered with.
             goto start;
         }
         updateHash(((const unsigned char *)(& t.seconds))[i]);
     }
     
-    //We don't know what the two least significant bytes of the 32 bit fraction are.
+    //We don't know what the two least significant bytes of the 32 bit fraction are, because we only use 16 bits
+    //internally
     //So we just send 0.5 times the possible range.
     if(!escapedWrite(0))
         {
@@ -258,7 +277,7 @@ void WBTVNode::sendTime()
         }
         updateHash(127);
         
-    
+    //Send the two most significant bytes of the fraction part of the time.
     for (i=0;i<2;i++)
     {
         if(!escapedWrite(((unsigned char *)(& t.fraction))[i]))
@@ -289,27 +308,41 @@ void WBTVNode::sendTime()
     else
     {
         temp = WBTVClock_error;
-        count =-15;
+        count =-16;
         
-        while (temp& (~(unsigned long)0xff))
+        //We repeatedly divide by 2, until we get to 255 or less.
+        //This is equal to dividing the count by 2 to the n where n is the smallest
+        //number that produces a result less than 256.
+        //We keep track of the number of divides.
+        
+        
+        //Our error count was originally in 2 to the 16ths of a second.
+        //Therefore, if we have only one of those ticks, our error
+        //should be one times 2^-16, so we start the initial count off at -16.
+        //For every time we divide, we increase the count by one.
+        while (temp > 255)
         {
             count ++;
             temp = temp>>1;
             
         }
     
+    //We send the count of divides
     if(!escapedWrite(count))
         {
             goto start;
         }
         updateHash(count);
         
+    //Now we send the actual value
     if(!escapedWrite(temp&0xff))
         {
             goto start;
         }
         updateHash(temp&0xff);
     }
+    
+    //and now the hash
         
         if(!escapedWrite(sumSlow))
         {

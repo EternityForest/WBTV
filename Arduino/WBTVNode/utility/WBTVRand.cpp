@@ -70,7 +70,10 @@ uint32_t WBTV_rawrand()
     WBTV_doRand();
     return (uint32_t)y;
 }
-
+/*
+ugly code alert. I couldn't think of a better way of doing this than to have all these overloaded functions.
+Otherwise, function calls will be ambiguous because of the floating point version. Slightly Annoying.
+*/
 unsigned long WBTV_rand(unsigned long min, unsigned long max)
 {
     WBTV_doRand();
@@ -312,6 +315,11 @@ void WBTV_get_entropy()
     unsigned char changes =0;
     unsigned char temp = 0;
     unsigned char sames =0;
+    
+    //Entropy estimation algorithm.
+    //Keep sampling the temperature sensor until we detect that the reading has changed at least 32
+    //times, and stayed the same 32 times,
+    //because we would expect a high entropy signal to change about half the time.
     while((changes<32)|(sames<32))
     {
      temp = getTemperature();
