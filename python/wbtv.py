@@ -12,7 +12,17 @@ class Node():
             self.messages.append((x,y))
 
         self.parser = Parser(f)
-        
+    
+    def setLights(self, start,data):
+        d = struct.pack("<BHB",0,start,len(data))
+        self.send(b"STAGE",d+bytearray(data))
+
+    def fadeLights(self, start,data,time):
+        time = int(time*48)
+        d = struct.pack("<BHBB",1,start,len(data),time)
+        self.send(b"STAGE",d+bytearray(data))
+    
+     
     def sendTime(self, accuracy):
             x = accuracy/ 255.0
             x = int(math.log(x,2)+0.51)

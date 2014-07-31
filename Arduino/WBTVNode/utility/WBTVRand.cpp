@@ -240,7 +240,7 @@ unsigned char WBTV_urand_byte()
 
 
 #if defined( __AVR_ATmega32U4__) || defined(__MSP430G2452__) || defined(__MSP430G2553__) || defined(__MSP430G2231__) || defined( __AVR_ATmega328P__) || defined( __AVR_ATmega168P__) || defined( __AVR_ATmega328__) || defined( __AVR_ATmega168__)
-//On supported platforms, gather enough entrop from the temperature sensor to generate one random byte.
+//On supported platforms, gather enough entropy from the temperature sensor to generate one random byte.
 //Use this followed by urand_byte when you need a high qualit random byte, or simply call this when you have time
 //To add in entropy. May block for several seconds, true entropy is slow to generate.
 
