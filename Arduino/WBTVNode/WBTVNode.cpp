@@ -133,13 +133,13 @@ waiting:
     }
   }
 
-  if (!escapedWrite(sumSlow))
-
+  if (!escapedWrite(sumFast))
   {
     goto waiting;
   }
 
-  if (!escapedWrite(sumFast))
+  if (!escapedWrite(sumSlow))
+
   {
     goto waiting;
   }
@@ -312,7 +312,7 @@ void inline WBTVNode::handle_end_of_message()
       }
 
       //Check the hash
-      if ((message[recievePointer-1]== sumFast) && (message[recievePointer-2]== sumSlow))
+      if ((message[recievePointer-1]==sumSlow) && (message[recievePointer-2]== sumFast))
       {
         #ifdef WBTV_ADV_MODE
         //Check if this is a time() message.

@@ -85,15 +85,15 @@ class Hash():
         """Update the has state by hashing either 1 integer or a byte array"""
         if hasattr(val,"__iter__"):
             for i in val:
-                self.slow +=i
-                self.fast += self.slow
+                self.slow =(self.slow+i)%256
+                self.fast =(self.fast+ self.slow)%256
         else:
-            self.slow += val
-            self.fast += self.slow
+            self.slow =(self.slow+val)%256
+            self.fast =(self.fast+ self.slow)%256
 
     def value(self):
         """Return the has state as a byte array"""
-        return bytearray([self.slow%256,self.fast%256])
+        return bytearray([self.fast,self.slow])
 
 class Parser():
     def __init__(self,callback):
@@ -134,9 +134,9 @@ class Parser():
         #If the byte is a newline, that is the end of a message
         if byte == ord("\n"):
             h = Hash()
-            #Hash the message, divider, and the checksum at the end of the message
+            #Hash the header,message, and divider, 
             h.update(self.header)
-            h.update(ord("~"))
+            h.update(b"~")
             h.update(bytearray(self.message[:-2]))
 
             #Compare our hash with the message checksum
@@ -188,12 +188,16 @@ def makeMessage(header,message):
             data.append(i)
         h.update(i)
         
-    #Now append the two checksum bytes        
-    data.append(h.value()[0])
-    data.append(h.value()[1])
+    #Now append the two checksum bytes 
+    for i in h.value():
+        if i in [ord("!"),ord("~"),ord("\\")]:
+            data.append(ord('\\'))
+            data.append(i)
     #And the newline which marks the end
     data.append(ord('\n'))
     return data
+
+
 
 
 #def internalRecieve(x,y):

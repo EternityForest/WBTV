@@ -343,16 +343,16 @@ void WBTVNode::sendTime()
     }
     
     //and now the hash
-        
-        if(!escapedWrite(sumSlow))
-        {
-            goto start;
-        }
         if(!escapedWrite(sumFast))
         {
             goto start;
         }
         
+        if(!escapedWrite(sumSlow))
+        {
+            goto start;
+        }
+
         if(!writeWrapper('\n'))
         {
             goto start;
