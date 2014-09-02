@@ -167,7 +167,7 @@ def makeMessage(header,message):
     
     #Add all the bytes of the header, and hash them, but prepend escapes as needed.
     for i in header:
-        if i in [ord("\n"),ord("~"),ord("\\")]:
+        if i in [ord("!"),ord("\n"),ord("~"),ord("\\")]:
             data.append(ord('\\'))
             data.append(i)
         else:
@@ -180,7 +180,7 @@ def makeMessage(header,message):
     
     #Same as we did for the header
     for i in message:
-        if i in [ord("!"),ord("~"),ord("\\")]:
+        if i in [ord("\n"),ord("!"),ord("~"),ord("\\")]:
             data.append(ord('\\'))
             data.append(i)
         else:
@@ -189,7 +189,7 @@ def makeMessage(header,message):
         
     #Now append the two checksum bytes 
     for i in h.value():
-        if i in [ord("!"),ord("~"),ord("\\")]:
+        if i in [ord("\n"),ord("!"),ord("~"),ord("\\")]:
             data.append(ord('\\'))
             data.append(i)
         else:
