@@ -61,16 +61,15 @@ class Node():
         self.messages = []
         return x
 
-    def send(self,header,message):
+    def send(self,header,message,block=True):
         """Given a topic and message(binary strings or normal strings), send a message over the bus.
            NOTE: A PC Serial port is NOT fast enough for the CSMA stuff. You may get occasional lost messages with a normal usb to
            serial converter. Use the included leonardo usb to WBTV sketch"""
-           
-        #Note that this just spews the data out the port and depends on the
         x = makeMessage(header,message)
         self.totalTraffic += len(x)
         self.s.write(x)
-        self.s.flush()
+        if block:
+            self.s.flush()
 
 class Hash():
     #This class implements the modulo 256 variant of the fletcher checksum
@@ -192,6 +191,8 @@ def makeMessage(header,message):
     for i in h.value():
         if i in [ord("!"),ord("~"),ord("\\")]:
             data.append(ord('\\'))
+            data.append(i)
+        else:
             data.append(i)
     #And the newline which marks the end
     data.append(ord('\n'))
