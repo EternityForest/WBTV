@@ -22,6 +22,7 @@ public:
   void stringSendMessage(const char *channel, const char *data);
   void decodeChar(unsigned char chr);
   void service();
+  void serviceAll();
   WBTVNode( Stream *, int bus_sense_pin);
   WBTVNode( Stream *);
   

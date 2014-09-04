@@ -171,6 +171,17 @@ lastServiced = millis();
 
 }
 
+void WBTVNode::serviceAll()
+{
+    while (BUS_PORT->available())
+    {
+      decodeChar(BUS_PORT->read());
+    }
+    
+lastServiced = millis();
+
+}
+
 //Process one incoming char
 void WBTVNode::decodeChar(unsigned char chr)
 {
