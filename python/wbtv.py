@@ -1,4 +1,15 @@
 import serial,time,base64,math,struct
+
+#Return easier to work with service object representation
+def parseService(service):
+    o = object()
+    o.provider = service[0:15]
+    o.service = service[16:32]
+    l = service[33]
+    o.channel = service[34:34+l]
+    o.modifiers = service[35+l:]
+    return o
+
 class Node():
     "Class representing one node that can send and listen for messages"
     def __init__(self, port,speed):
@@ -14,13 +25,22 @@ class Node():
         self.parser = Parser(f)
     
     def setLights(self, start,data):
-        d = struct.pack("<BHB",0,start,len(data))
-        self.send(b"STAGE",d+bytearray(data))
+        while data:
+            x = data[:48]
+            data = data[48:]
+            d = struct.pack("<BHB",0,start,len(x))
+            self.send(b"STAGE",d+bytearray(x))
+            start+= len(x)
 
     def fadeLights(self, start,data,time):
-        time = int(time*48)
-        d = struct.pack("<BHBB",1,start,len(data),time)
-        self.send(b"STAGE",d+bytearray(data))
+            while data:
+                x = data[:48]
+                data = data[48:]
+            time = int(time*48)
+            d = struct.pack("<BHBB",1,start,len(x),time)
+            self.send(b"STAGE",d+bytearray(x))
+            start+= len(x)
+            
     
      
     def sendTime(self, accuracy):
@@ -31,8 +51,15 @@ class Node():
             #Add half a millisecond to compensate for the average USB response delay
             #Add 50 microseconds to compensate for other delays that probably exist.
             t=time.time() + 0.00055
-            self.send(b"TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , int(x), int(y)  ))
+            m = makeMessage(b"TIME", struct.pack("<qLbB" , int(t), int((t%1)*(2**32)) , int(x), int(y)  ))
+            #Some devices have a better error estimate when you send the rest of the packet slightly after the bang
+            self.s.write(m[0])
+            time.sleep(0.002)
+            self.s.write(m[1:])
             self.s.flush()
+
+    def sendTZ(self):
+        pass
     
     #Send random data on the rand channel.
     def sendRand(self,num=16):

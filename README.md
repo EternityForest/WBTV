@@ -226,7 +226,7 @@ Use WBTVClock_invalidate() first to force setting the time.
 
 ####WBTV_Clock_error_per_second
 This 16 bit value represents the estimated accuracy of the internal oscillator.
-It is in parts per 2**16, and defaults to 2500, or 4%, but you can write a smallr value if your oscillator is better.
+It is in parts per 2**16, and defaults to 2500, or 4%, but you can write a smaller value if your oscillator is better.
 Suggested conservative values based on your crystal
 
     0.5% = 350(Common ceramic resonator)
@@ -234,6 +234,8 @@ Suggested conservative values based on your crystal
     100ppm = 10
     20ppm = 3
     10ppm or better = 1;
+
+It is not recommended to ever use 0.
 
 ####WBTVClock_invalidate()
 Tell WBTV that it's current time is inaccurate. Used to force manual setting.
@@ -304,3 +306,14 @@ Send a message to channel containing data. strings, bytes, and bytearrays are ac
 
 ###Node.sendTime(accuracy)
 Send a TIME broadcast. Accuracy is the accuracy to advertise, in maximum seconds of error.
+
+###Node.setLights(start, data)
+Data must be an iterable of bytes, start is the start address. Set a number of WBTV STAGE protocol lighting values starting at the start address.
+
+###Node.fadeLights(start, data,time)
+Data must be an iterable of bytes, start is the start address. Fade a number of WBTV STAGE protocol lighting values from their current value to the new
+values over time, starting at the start address. Fade time is in seconds, and is limited to about 5.3 seconds(255 48ths of a second)
+
+
+###parseService(service)
+When given the data of a WBTV service broadcast, returns an object with the following properties: owner, service, channel, modifiers

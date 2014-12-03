@@ -362,7 +362,7 @@ void inline WBTVNode::handle_end_of_message()
             if (stringCallback)
             {
               stringCallback((char*)message ,
-              (char *)message+headerTerminatorPosition);
+              (char *)message+headerTerminatorPosition+1);
             }
         }
       }
