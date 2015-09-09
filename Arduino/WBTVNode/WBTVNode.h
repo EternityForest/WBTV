@@ -97,7 +97,7 @@ private:
 
 };
 
-
+extern unsigned short WBTV_nickID;
 
 /**Read one of whatever data type from the pointer you give it, then increment
  *the pointer by the size of the data type.

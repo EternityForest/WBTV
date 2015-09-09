@@ -41,9 +41,24 @@ class Node():
             self.send(b"STAGE",d+bytearray(x))
             start+= len(x)
             
-    
+    def sendIOMessage(self,events):
+        b = bytearray(0)
+        recipient = 0
+        
+        for i in events:
+            if len(b)>64:
+                self.send(b'IO',b)
+                b = bytearray(0)
+                recipient = 0
+                
+            if i.recipient != recipient:
+                b.extend(Event(0,1,0,'u16',i.recipient))
+                recipient = i.recipient
+                b.extend(i.toBytes())
+            
+            
      
-    def sendTime(self, accuracy):
+    def sendTime(self, accuracy=60*60*24*365*30):
             x = accuracy/ 255.0
             x = int(math.log(x,2)+0.51)
             y = accuracy/2**x
@@ -189,8 +204,8 @@ def makeMessage(header,message):
     header = bytearray(header)
     message = bytearray(message)
 
-    #every message  starts with a bang    
-    data = bytearray(b'!')
+    #every message  starts with a bang. Two bangs are used for a bit of noise resistance and sleep mode compatibility.    
+    data = bytearray(b'!!')
     
     #Add all the bytes of the header, and hash them, but prepend escapes as needed.
     for i in header:
@@ -225,7 +240,121 @@ def makeMessage(header,message):
     data.append(ord('\n'))
     return data
 
+#def _getFormatByte(s,d):
+    #x = 0
+    #if s.startswith('u'):
+        #x |= 1
+    #if s.startswith('i')
+        #x |= 2
+    #if s.startswith('f')
+        #x |= 3
+    
+    #if '16' in s:
+        #x |= 4
+    #if '32' in s:
+        #x |= 8
+    #if '64' in s:
+        #x |= 12
+    #return b
 
+
+_formats = {
+    'bin':  (0,None),
+    'u8':   (1,"<B"), 
+    'u16':  (1 + 4, '<H'), 
+    'u32' : (1+8,'<L'),
+    'u64' : (1+12,'<Q'),
+    'i8' :  (2,'<b'),
+    'i16' : (2+4,'<s'),
+    'i32' : (2+8,'<l'),
+    'i64' : (2+12,'<l'),
+    'f32' : (3+8,'<f'),
+    'f64' : (3+12,'<d')
+}
+     
+modifiers ={
+ 'one':   (0,1),
+ 'femto': (1,10**-15),
+ 'pico':  (2,10**-12),
+ 'nano':  (3,10**-9),
+ 'micro': (4,10**-6),
+ 'milli': (5,10**-3),
+ 'kilo':  (6,10**-3),
+ 'mega':  (7,10**-6),
+ 'centi': (8,10**-2),
+ '2_32nd':(9,2**-32),
+ '2_16th':(10,2**-16),
+ '2_8th': (11,2**-8),
+}
+     
+_rev_fmts = {}
+_rev_mdfy = {}
+for i in _formats:
+    _rev_fmts[_formats[i][0]]=(i,_formats[i][1])
+    
+for i in range(0,4):
+    _rev_fmts[i*4] = ('bin',None)
+    
+for i in modifiers:
+    _rev_mdfy[modifiers[i][0]]= (i,modifiers[i][1])
+#}
+    
+
+class Event():
+    def __init__(self,recipient, eventtype, port, dataformat, data, modifier = 'one'):
+        self.recipient = recipient
+        self.eventtype = eventtype
+        self.port = port
+        self.dataformat = dataformat
+        self.data = data
+        self.modifier = modifier
+        
+    def toBytes(self):
+        b = bytearray()
+        b.extend(struct.pack("<H",self.eventtype))
+        b.extend(struct.pack("<B",self.port))
+        x=0
+        
+        if self.data==None:
+            b.append(0)
+            return b
+        
+        if self.dataformat=='blob':
+            if len(data)>2:
+                b.extend(struct.pack('<B',len(self.data)))
+                b.append(12)
+                b.extend(self.data)
+                return b
+            
+            elif len(self.data) == 1:
+                x |= 4
+            elif len(self.data) == 2:
+                x |= 8
+            b.append(x)
+            b.extend(self.data)
+            return b
+                
+        if self.dataformat == 'bool':
+            if self.data:
+                x|=64
+            else:
+                x|=32
+            b.append(x)
+            return b
+        
+                
+        if self.dataformat in _formats:
+            x,y = _formats[self.dataformat]
+            b.append(x + (modifiers[self.modifier][0]*16))
+            if y:
+                b.extend(struct.pack(y,self.data))
+            else:
+                b.extend(self.data)
+            return b
+        
+          
+        
+            
 
 
 #def internalRecieve(x,y):
@@ -270,7 +399,7 @@ def makeMessage(header,message):
 #            
 #            if "as" in x:
 #                funit = x[x.index['as']+1]
-#            else:
+#            else:a
 #                funit = ''
 #                
 #            if ftype in name_to_struct:
@@ -292,4 +421,63 @@ def makeMessage(header,message):
 #    
 #    
 #
-#            
+#
+
+
+def parseIOMessage(data):
+    data = bytearray(data)
+    recipient = 0
+    pointer = 0
+    events = []
+    length_bytes = 0
+    while pointer<len(data):
+        print("datais",data)
+        dformat= data[pointer+3]
+        decodedformat = _rev_fmts[dformat&15][0]
+        if decodedformat == 'bin' and (dformat>>4)<10:
+            decodedformat = ['null','false','true','bits','bin','utf8','uuid','u','i','f'][(dformat>>4)]
+
+        if((dformat&3)>0):
+            dlen = 2**((dformat>>2)&3);    
+        else:
+                dlen = ((dformat>>2)&3);
+                if(dlen==3):
+                        dlen = data[pointer+4]; length_bytes = 1;
+                
+        if dformat&15 in _rev_fmts:
+            if _rev_fmts[dformat&15][1]:
+                edata = struct.unpack(_rev_fmts[dformat&15][1],data[pointer+4:pointer+dlen+4]) [0]* _rev_mdfy[dformat>>4][1]
+                if decodedformat == 'utf8':
+                    edata = edata.decoode('utf8')
+                if decodedformat == 'null':
+                    edata = None
+                if decodedformat == 'false':
+                    edata = False
+                if decodedformat == 'true':
+                    edata = True
+            else:
+                if ((dformat>>2)&3) == 3: 
+                    edata = data[pointer+4:pointer+dlen+5]
+                else:
+                    edata = data[pointer+4:pointer+5+((dformat>>2)&3)]
+                    
+        elif dformat == 16:
+            edata = False
+        elif dformat == 32:
+            edata = True
+        etype = struct.unpack("<H",data[pointer:pointer+2])[0]
+        eport = data[pointer+2]
+        if etype == 1:
+            recipient = edata
+            continue
+        events.append(Event(recipient, etype, eport, decodedformat, edata))
+        pointer += dlen+4+length_bytes
+        length_bytes = 0
+    return events
+
+x =Event(56,90,8,'u64',100,'milli').toBytes()
+print(x)
+print(parseIOMessage(x)[0].port)
+print(parseIOMessage(x)[0].dataformat)
+print(parseIOMessage(x)[0].data)
+print(parseIOMessage([0,25,79,76,4,80,111,111,112])[0].dataformat)

@@ -279,9 +279,9 @@ increment the pointer by four.
 
 This lets you treat a pointer as a stream of various different types.
 
-####Untested Stuff
+####class WBTVIOReader
 
-This stuff might go through API changes, not work, or dissapear entirely later.
+The Io
 
 
 ##Python Library
@@ -317,3 +317,8 @@ values over time, starting at the start address. Fade time is in seconds, and is
 
 ###parseService(service)
 When given the data of a WBTV service broadcast, returns an object with the following properties: owner, service, channel, modifiers
+
+####Untested Stuff
+
+This stuff might go through API changes, not work, or dissapear entirely later.
+

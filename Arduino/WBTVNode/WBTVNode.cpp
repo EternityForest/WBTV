@@ -1,5 +1,7 @@
 #include "WBTVNode.h"
 
+unsigned short WBTV_nickID = 2;
+
 /*
  *Instantiate a wired-OR WBTV node with CSMA, collision avoidance,
  *and collision detection. bus_sense_pin must be the RX pin, and
