@@ -341,7 +341,7 @@ void inline WBTVNode::handle_end_of_message()
           callback((unsigned char*)message ,
           headerTerminatorPosition,
           (unsigned char *)message+headerTerminatorPosition+1, //The plus one accounts for the null terminator we put in
-          recievePointer-(headerTerminatorPosition+1)); //Would be plus 2 for the checksum but we have the null byte inserted so it's plus 1
+          recievePointer-(headerTerminatorPosition+3));
         }
         else
         {
